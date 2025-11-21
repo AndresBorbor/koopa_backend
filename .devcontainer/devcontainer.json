@@ -1,0 +1,12 @@
+{
+  "name": "Koopa Backend Dev",
+  "image": "mcr.microsoft.com/dotnet/sdk:8.0",
+  "postCreateCommand": "dotnet restore",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-dotnettools.csharp"
+      ]
+    }
+  }
+}
