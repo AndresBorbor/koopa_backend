@@ -4,6 +4,7 @@ using KoopaBackend.Infrastructure.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
+
 // Agregar soporte para Controllers
 builder.Services.AddControllers();
 
@@ -15,6 +16,8 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<IMateriaRepository, MateriaRepository>();
 builder.Services.AddScoped<MateriaService>();
 
+builder.Services.AddScoped<IInscripcionesRepository, InscripcionesRepository>();
+builder.Services.AddScoped<InscripcionesService>();
 
 // CORS
 builder.Services.AddCors(options =>
@@ -27,7 +30,11 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
-
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    db.Database.Migrate(); // aplica automáticamente todas las migraciones
+}
 app.UseCors("AllowFrontend");
 
 if (app.Environment.IsDevelopment())
