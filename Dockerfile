@@ -1,26 +1,18 @@
-# Imagen SDK para desarrollo (.NET 8)
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS dev
+WORKDIR /app
 
-# Carpeta de trabajo dentro del contenedor
-WORKDIR /app/koopa_backend
-
-# Copiamos todo el proyecto (el contexto del build es ./koopa_backend)
-COPY . .
-
-# Restauramos paquetes NuGet
-# 👇 No indicamos nombre de .csproj para que funcione sin importar el casing
+# Copiamos el csproj y restauramos dependencias
+COPY *.csproj ./
 RUN dotnet restore
 
-# Instalamos una versión ESTABLE de dotnet-ef como herramienta global
-RUN dotnet tool install --global dotnet-ef --version 8.0.0
-
-# Agregamos las tools globales al PATH
+# Instalar dotnet-ef para poder usar migraciones dentro del contenedor
+RUN dotnet tool install --global dotnet-ef
 ENV PATH="$PATH:/root/.dotnet/tools"
 
-# Opcional: compilar para verificar
-# RUN dotnet build -c Debug --no-restore
+# Copiamos el resto del código
+COPY . .
 
 EXPOSE 8080
 
-# Comando por defecto (docker-compose lo puede sobreescribir con dotnet watch)
-ENTRYPOINT ["dotnet", "run", "--urls", "http://+:8080"]
+# Comando por defecto: dotnet watch
+CMD ["dotnet", "watch", "run", "--urls", "http://0.0.0.0:8080"]

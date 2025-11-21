@@ -1,4 +1,3 @@
-using KoopaBackend.Domain.Entities;
 using KoopaBackend.Domain.Interfaces;
 
 namespace KoopaBackend.Application.Services;
@@ -12,6 +11,8 @@ public class InscripcionesService
         _repository = repository;
     }
 
-    public Task<IEnumerable<Inscripciones>> GetAllAsync()
-        => _repository.GetAllAsync();
+    public async Task<object> ListarInscripciones()
+    {
+        return await _repository.GetAllAsync();
+    }
 }

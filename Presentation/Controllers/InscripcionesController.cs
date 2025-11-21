@@ -1,11 +1,10 @@
 using KoopaBackend.Application.Services;
-using KoopaBackend.Domain.Entities;
 using Microsoft.AspNetCore.Mvc;
 
 namespace KoopaBackend.Presentation.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/inscripciones")]
 public class InscripcionesController : ControllerBase
 {
     private readonly InscripcionesService _service;
@@ -15,11 +14,24 @@ public class InscripcionesController : ControllerBase
         _service = service;
     }
 
-    // GET: api/inscripciones
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Inscripciones>>> GetAll()
+    public async Task<IActionResult> Get()
     {
-        var data = await _service.GetAllAsync();
+        var data = await _service.ListarInscripciones();
         return Ok(data);
     }
+
+    [HttpGet("{id}")]
+    public IActionResult GetById(int id)
+    {
+        // Solo para probar que el código cambió.
+        // No llama al servicio, solo devuelve algo básico.
+        return Ok(new
+        {
+            message = "Endpoint funcionando",
+            id_recibido = id
+        });
+    }
 }
+
+

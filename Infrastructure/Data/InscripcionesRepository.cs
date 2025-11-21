@@ -5,15 +5,13 @@ namespace KoopaBackend.Infrastructure.Data;
 
 public class InscripcionesRepository : IInscripcionesRepository
 {
-    // Datos fake para probar
-    private static readonly List<Inscripciones> _data = new()
+    public async Task<IEnumerable<Inscripciones>> GetAllAsync()
     {
-        new Inscripciones { Id = 1, Nombre = "Joseph" },
-        new Inscripciones { Id = 2, Nombre = "Keyla" }
-    };
-
-    public Task<IEnumerable<Inscripciones>> GetAllAsync()
-    {
-        return Task.FromResult<IEnumerable<Inscripciones>>(_data);
+        // Luego esto vendrá de DB2. Por ahora solo devuelve algo de prueba:
+        return await Task.FromResult(new List<Inscripciones>
+        {
+            new Inscripciones { Id = 1, Nombre = "Koopa Verde" },
+            new Inscripciones { Id = 2, Nombre = "Koopa Rojo" }
+        });
     }
 }
