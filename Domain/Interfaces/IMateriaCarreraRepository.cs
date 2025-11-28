@@ -5,12 +5,9 @@ using KoopaBackend.Application.DTOs; // Asegúrate de importar donde está el DT
 
 namespace KoopaBackend.Domain.Interfaces
 {
-    public interface IMateriaRepository
+    public interface IMateriaCarreraRepository
     {
         // Métodos básicos (opcionales si ya los tienes en un genérico)
-        Task<IEnumerable<Materia>> GetAllAsync();
-        
-        // ⭐ EL MÉTODO IMPORTANTE PARA EL DASHBOARD
-        Task<IEnumerable<MateriaMallaDto>> ObtenerDatosMallaAsync();
+        Task<IEnumerable<MateriaCarrera>> GetAllAsync();
     }
 }
