@@ -1,23 +1,33 @@
-using KoopaBackend.Application.Services;
 using Microsoft.AspNetCore.Mvc;
+using System.Threading.Tasks;
+using KoopaBackend.Domain.Interfaces; // Para IMateriaRepository
 
-namespace KoopaBackend.Presentation.Controllers;
-
-[ApiController]
-[Route("api/materias")]
-public class MateriaController : ControllerBase
+namespace KoopaBackend.API.Controllers
 {
-    private readonly MateriaService _service;
-
-    public MateriaController(MateriaService service)
+    [Route("api/[controller]")]
+    [ApiController]
+    public class MateriaController : ControllerBase
     {
-        _service = service;
-    }
+        private readonly IMateriaRepository _materiaRepository;
 
-    [HttpGet]
-    public async Task<IActionResult> Get()
-    {
-        var data = await _service.ListarMaterias();
-        return Ok(data);
+        public MateriaController(IMateriaRepository materiaRepository)
+        {
+            _materiaRepository = materiaRepository;
+        }
+
+        // GET: api/materia/malla-stats
+        [HttpGet("malla-stats")]
+        public async Task<IActionResult> GetMateriaMallaStats()
+        {
+            // Llamamos al repositorio que ya nos devuelve el JSON listo (DTOs)
+            var datos = await _materiaRepository.ObtenerDatosMallaAsync();
+            
+            if (datos == null)
+            {
+                return NotFound("No se encontraron datos para la malla.");
+            }
+
+            return Ok(datos);
+        }
     }
 }

@@ -1,17 +1,36 @@
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using KoopaBackend.Domain.Entities;
 using KoopaBackend.Domain.Interfaces;
+using KoopaBackend.Infrastructure.Data; // Donde está tu KoopaDbContext
 
-namespace KoopaBackend.Infrastructure.Data;
-
-public class InscripcionesRepository : IInscripcionesRepository
+namespace KoopaBackend.Infrastructure.Repositories
 {
-    public async Task<IEnumerable<Inscripciones>> GetAllAsync()
+    public class InscripcionesRepository : IInscripcionesRepository
     {
-        // Luego esto vendrá de DB2. Por ahora solo devuelve algo de prueba:
-        return await Task.FromResult(new List<Inscripciones>
+        private readonly KoopaDbContext _context;
+
+        public InscripcionesRepository(KoopaDbContext context)
         {
-            new Inscripciones { Id = 1, Nombre = "Koopa Verde" },
-            new Inscripciones { Id = 2, Nombre = "Koopa Rojo" }
-        });
+            _context = context;
+        }
+
+        // 1. Implementación de GetAllAsync
+        public async Task<IEnumerable<Inscripciones>> GetAllAsync()
+        {
+            // Retorna los datos reales de DB2
+            return await _context.Inscripciones.ToListAsync();
+
+        }
+
+        // // 2. Implementación de GetByEstudianteAsync
+        // public async Task<IEnumerable<Inscripciones>> GetByEstudianteAsync(long codEstudiante)
+        // {
+        //     return await _context.Inscripciones
+        //                          .Where(x => x.CodEstudiante == codEstudiante)
+        //                          .ToListAsync();
+        // }
     }
 }

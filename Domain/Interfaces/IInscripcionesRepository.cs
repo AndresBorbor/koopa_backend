@@ -1,8 +1,12 @@
-using KoopaBackend.Domain.Entities;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using KoopaBackend.Domain.Entities; // 👈 Usamos el namespace correcto
 
-namespace KoopaBackend.Domain.Interfaces;
-
-public interface IInscripcionesRepository
+// 👇 CAMBIO IMPORTANTE: KoopaBackend
+namespace KoopaBackend.Domain.Interfaces 
 {
-    Task<IEnumerable<Inscripciones>> GetAllAsync();
+    public interface IInscripcionesRepository
+    {
+        Task<IEnumerable<Inscripciones>> GetAllAsync();
+    }
 }
