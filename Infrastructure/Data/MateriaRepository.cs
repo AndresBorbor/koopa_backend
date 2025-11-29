@@ -5,10 +5,8 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using KoopaBackend.Domain.Entities;
 using KoopaBackend.Domain.Interfaces;
-using KoopaBackend.Infrastructure.Data; // Tu DbContext
-using KoopaBackend.Application.DTOs;    // Tu DTO
-
-
+using KoopaBackend.Infrastructure.Data;
+using KoopaBackend.Application.DTOs;
 
 namespace KoopaBackend.Infrastructure.Repositories
 {
@@ -23,84 +21,91 @@ namespace KoopaBackend.Infrastructure.Repositories
 
         public async Task<IEnumerable<Materia>> GetAllAsync()
         {
-            return await _context.Materias.ToListAsync();
+            return await _context.Materias.AsNoTracking().ToListAsync();
         }
 
         public async Task<IEnumerable<MateriaMallaDto>> ObtenerDatosMallaAsync()
         {
-            // 1. Traer datos crudos (Raw Data) haciendo JOIN en memoria o DB.
-            // Traemos todo para procesarlo en memoria (Client Evaluation) 
-            // porque la agrupación anidada compleja a veces falla en EF Core directo a SQL.
-            
-            var materias = await _context.Materias.ToListAsync();
-            var inscripciones = await _context.Inscripciones.ToListAsync();
-            var semestres = await _context.Semestres.ToListAsync();
+            // 1. Catálogo de Semestres
+            // Al ser 'int' estricto, no necesitamos trucos aquí.
+            var semestres = await _context.Semestres
+                                          .AsNoTracking()
+                                          .ToDictionaryAsync(k => k.CodSemestre, v => v.Nombre);
 
+            // 2. Metadatos de Materias
+            var materias = await _context.Materias
+                                         .AsNoTracking()
+                                         .Select(m => new { m.CodMateria, m.NombreMateria })
+                                         .ToListAsync();
+
+            // 3. Aggregation (La parte crítica)
+            var estadisticasRaw = await _context.Inscripciones
+                .AsNoTracking()
+                .GroupBy(i => new { i.CodMateria, i.CodSemestre })
+                .Select(g => new 
+                {
+                    // FIX: Casteamos explícitamente a (int). 
+                    // Esto le dice al compilador: "Confía en mí, esto NO es nullable".
+                    CodMateria = (int)g.Key.CodMateria,
+                    CodSemestre = (int)g.Key.CodSemestre,
+                    
+                    TotalInscritos = g.Count(),
+                    // Asumimos que Promedio puede ser null (double?), pero la comparación < 60 funciona igual
+                    TotalReprobados = g.Count(x => (x.Promedio != null && x.Promedio < 60) || x.CodEstadoCurso == "REP")
+                })
+                .ToListAsync();
+
+            // 4. Procesamiento en Memoria
             var resultado = new List<MateriaMallaDto>();
+
+            // Ahora el Key del diccionario será estrictamente 'int'
+            var statsPorMateria = estadisticasRaw
+                                    .GroupBy(x => x.CodMateria)
+                                    .ToDictionary(g => g.Key, g => g.ToList());
 
             foreach (var mat in materias)
             {
-                // Filtramos inscripciones de esta materia
-                var inscripcionesDeMateria = inscripciones.Where(i => i.CodMateria == mat.CodMateria).ToList();
+                // Como mat.CodMateria es int y el diccionario es <int, List>, esto ya no debe fallar
+                var statsDeEstaMateria = statsPorMateria.ContainsKey(mat.CodMateria) 
+                    ? statsPorMateria[mat.CodMateria] 
+                    : new();
 
-                // Si no tiene datos, decidimos si agregarla vacía o saltarla. 
-                // La agregamos vacía para que salga en la malla.
-                
-                // A. Calcular Historial (Rendimiento)
-                var historial = inscripcionesDeMateria
-                    .GroupBy(i => i.CodSemestre)
-                    .Select(grupo => {
-                        var sem = semestres.FirstOrDefault(s => s.CodSemestre == grupo.Key);
-                        var nombrePeriodo = sem != null ? sem.Nombre : "Desconocido"; // Ej: "I PAO 2023"
-                        
-                        // Lógica de Reprobado: (Promedio < 60 o Estado 'REP')
-                        int reprobados = grupo.Count(x => (x.Promedio != null && x.Promedio < 60) || x.CodEstadoCurso == "REP");
-
-                        return new RendimientoMallaDto
-                        {
-                            Periodo = nombrePeriodo,
-                            Inscripciones = grupo.Count(),
-                            Reprobados = reprobados
-                        };
+                // A. Historial
+                var historial = statsDeEstaMateria
+                    .Select(s => new RendimientoMallaDto
+                    {
+                        Periodo = semestres.ContainsKey(s.CodSemestre) ? semestres[s.CodSemestre] : "Desconocido",
+                        Inscripciones = s.TotalInscritos,
+                        Reprobados = s.TotalReprobados
                     })
-                    .OrderBy(h => h.Periodo) // Ordenar si es posible
+                    .OrderBy(h => h.Periodo)
                     .ToList();
 
-                // B. Calcular Stats Generales
-                int totalInscritos = inscripcionesDeMateria.Count;
-                int totalReprobados = inscripcionesDeMateria.Count(x => (x.Promedio != null && x.Promedio < 60) || x.CodEstadoCurso == "REP");
+                // B. Totales
+                int totalInscritos = statsDeEstaMateria.Sum(x => x.TotalInscritos);
+                int totalReprobados = statsDeEstaMateria.Sum(x => x.TotalReprobados);
                 double porcentaje = totalInscritos > 0 ? (double)totalReprobados / totalInscritos : 0;
 
-                // C. Determinar Color
-                // Verde (#22c55e) si reprobación < 30%, Rojo (#ef4444) si es mayor.
-                string colorHex = porcentaje > 0.30 ? "#ef4444" : "#22c55e"; 
+                string colorHex = porcentaje > 0.30 ? "#ef4444" : "#22c55e";
 
-                // D. Armar el objeto final
-                var dto = new MateriaMallaDto
+                resultado.Add(new MateriaMallaDto
                 {
                     Id = mat.CodMateria,
-                    Codigo = $"MATG-{mat.CodMateria}", // Código simulado
+                    Codigo = $"MATG-{mat.CodMateria}",
                     Nombre = mat.NombreMateria,
-                    Nivel = "NIVEL GENÉRICO", // Esto vendría de MateriaCarrera si lo tuviéramos
+                    Nivel = "NIVEL GENÉRICO",
                     Color = colorHex,
-                    
                     Rendimiento = historial,
-                    
                     Stats = new StatsMallaDto
                     {
                         Reprobados = totalReprobados,
                         ReprobadosPorcentaje = Math.Round(porcentaje, 2),
-                        
-                        // Estos datos son simulados porque requieren lógica de pre-requisitos compleja
-                        AprobaronRequisitos = totalInscritos - totalReprobados, 
-                        Habilitados = totalInscritos + 10, 
-                        
+                        AprobaronRequisitos = totalInscritos - totalReprobados,
+                        Habilitados = totalInscritos + 10,
                         Descripcion = $"Datos consolidados para {mat.NombreMateria}",
                         NotaPie = "Fuente: DB2 Académico"
                     }
-                };
-
-                resultado.Add(dto);
+                });
             }
 
             return resultado;
