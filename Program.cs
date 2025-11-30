@@ -55,6 +55,17 @@ builder.Services.AddScoped<TipoCreditoService>();
 builder.Services.AddScoped<TipoRequisitoService>();
 
 
+
+// Program.cs
+
+// 1. Registras el Repositorio (Capa de Datos)
+builder.Services.AddScoped<IMetricasRepository, MetricasRepository>();
+
+// 2. Registras el Servicio (Capa de Lógica)
+builder.Services.AddScoped<MetricasService>();
+
+// 3. (Opcional) Los controladores ya se registran solos con AddControllers()
+
 // ==================================================================
 // 2. INYECCIÓN DE DEPENDENCIAS (Lo más importante)
 // ==================================================================
