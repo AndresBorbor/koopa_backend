@@ -50,27 +50,31 @@ public async Task<DashboardDto> ObtenerMetricasAsync(int? codCarrera, int anio, 
         queryBase = queryBase.Where(x => x.est.CodCarrera == codCarrera.Value);
     }
 
-    // =================================================================================
-    // PASO 3: Métricas Escalares
-    // =================================================================================
-    int cantEstudiantes = await queryBase
-        .Select(x => x.est.CodEstudiante)
-        .Distinct()
-        .CountAsync();
+            // =================================================================================
+            // PASO 3: Métricas Escalares (Del periodo actual)
+            // =================================================================================
+            
+            // A. Cantidad de Estudiantes (Personas únicas)
+            int cantEstudiantes = await queryBase
+                .Select(x => x.est.CodEstudiante)
+                .Distinct()
+                .CountAsync();
+  
+            // B. Datos para tasas (En memoria para cálculo rápido)
+            var datosAcademicos = await queryBase
+                .Select(x => new { x.ins.Promedio, x.ins.CodEstadoCurso })
+                .ToListAsync();
+         
 
-    // Traemos datos a memoria
-    var datosAcademicos = await queryBase
-        .Select(x => new { x.ins.Promedio, x.ins.CodEstadoCurso })
-        .ToListAsync();
+            int totalRegistros = datosAcademicos.Count;
+            
+            // Reprobados (Promedio < 6 O Estado == 'REP')
+            int totalReprobados = datosAcademicos.Count(x => (x.Promedio != null && x.Promedio < 6) || x.CodEstadoCurso == "REP");
 
-    int totalRegistros = datosAcademicos.Count;
 
-    // Ahora sí funcionará la comparación decimal vs decimal
-    int totalReprobados = datosAcademicos.Count(x => (x.Promedio != null && x.Promedio < notaMinima) || x.CodEstadoCurso == "REP");
-
-    double tasaReprobacion = totalRegistros > 0
-        ? Math.Round(((double)totalReprobados / totalRegistros) * 100, 2)
-        : 0;
+            double tasaReprobacion = totalRegistros > 0 
+                ? Math.Round(((double)totalReprobados / totalRegistros) * 100, 2) 
+                : 0;
 
     double promedioCarrera = 0;
     if (datosAcademicos.Any(x => x.Promedio != null))
