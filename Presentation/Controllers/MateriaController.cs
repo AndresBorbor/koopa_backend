@@ -1,4 +1,4 @@
-using KoopaBackend.Application.Services; // Asegúrate de que aquí esté tu MateriaService
+using KoopaBackend.Application.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace KoopaBackend.Presentation.Controllers;
@@ -7,7 +7,6 @@ namespace KoopaBackend.Presentation.Controllers;
 [ApiController]
 public class MateriaController : ControllerBase
 {
-    // Cambiamos IMateriaRepository por MateriaService
     private readonly MateriaService _service;
 
     public MateriaController(MateriaService service)
@@ -15,18 +14,35 @@ public class MateriaController : ControllerBase
         _service = service;
     }
 
-    // GET: api/materias/malla-stats
-    [HttpGet("malla-stats")]
-    public async Task<IActionResult> GetMateriaMallaStats()
+    // GET: api/materias/malla-stats/5
+    // Ahora requerimos el ID de la carrera en la URL
+    [HttpGet("malla-stats/{carreraId}")]
+    public async Task<IActionResult> GetMateriaMallaStats(int carreraId)
     {
-        // El controlador delega la lógica al servicio
-        var datos = await _service.ObtenerDatosMallaAsync();
-
-        if (datos == null)
+        // Validación básica
+        if (carreraId <= 0)
         {
-            return NotFound("No se encontraron datos para la malla.");
+            return BadRequest("El ID de la carrera debe ser un número positivo.");
         }
 
-        return Ok(datos);
+        try 
+        {
+            // Pasamos el ID al servicio
+            var datos = await _service.ObtenerDatosMallaAsync(carreraId);
+
+            if (datos == null || !datos.Any())
+            {
+                // Un 204 No Content es a veces mejor que 404 si la carrera existe pero no tiene malla cargada,
+                // pero un 404 con mensaje está bien para este caso.
+                return NotFound($"No se encontraron datos de malla para la carrera con ID {carreraId}.");
+            }
+
+            return Ok(datos);
+        }
+        catch (Exception ex)
+        {
+            // Manejo básico de errores por si falla la conexión a BD
+            return StatusCode(500, $"Error interno: {ex.Message}");
+        }
     }
 }

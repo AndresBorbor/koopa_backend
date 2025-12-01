@@ -57,17 +57,19 @@ namespace KoopaBackend.Infrastructure.Repositories
                 .Select(x => x.est.CodEstudiante)
                 .Distinct()
                 .CountAsync();
-
+  
             // B. Datos para tasas (En memoria para cálculo rápido)
             var datosAcademicos = await queryBase
                 .Select(x => new { x.ins.Promedio, x.ins.CodEstadoCurso })
                 .ToListAsync();
+         
 
             int totalRegistros = datosAcademicos.Count;
             
-            // Reprobados (Promedio < 60 O Estado == 'REP')
-            int totalReprobados = datosAcademicos.Count(x => (x.Promedio != null && x.Promedio < 60) || x.CodEstadoCurso == "REP");
-            
+            // Reprobados (Promedio < 6 O Estado == 'REP')
+            int totalReprobados = datosAcademicos.Count(x => (x.Promedio != null && x.Promedio < 6) || x.CodEstadoCurso == "REP");
+
+
             double tasaReprobacion = totalRegistros > 0 
                 ? Math.Round(((double)totalReprobados / totalRegistros) * 100, 2) 
                 : 0;
@@ -89,7 +91,7 @@ namespace KoopaBackend.Infrastructure.Repositories
                 .Select(g => new 
                 {
                     CodMateria = g.Key.GetValueOrDefault(), 
-                    Reprobados = g.Count(y => (y.ins.Promedio != null && y.ins.Promedio < 60) || y.ins.CodEstadoCurso == "REP")
+                    Reprobados = g.Count(y => (y.ins.Promedio != null && y.ins.Promedio < 6) || y.ins.CodEstadoCurso == "REP")
                 })
                 .OrderByDescending(x => x.Reprobados)
                 .Take(5)
@@ -167,7 +169,7 @@ namespace KoopaBackend.Infrastructure.Repositories
                     {
                         CodCarrera = g.Key.GetValueOrDefault(),
                         Total = g.Count(),
-                        Reprobados = g.Count(y => (y.ins.Promedio != null && y.ins.Promedio < 60) || y.ins.CodEstadoCurso == "REP")
+                        Reprobados = g.Count(y => (y.ins.Promedio != null && y.ins.Promedio < 6) || y.ins.CodEstadoCurso == "REP")
                     })
                     .ToListAsync();
 

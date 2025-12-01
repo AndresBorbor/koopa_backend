@@ -24,33 +24,44 @@ namespace KoopaBackend.Infrastructure.Repositories
             return await _context.Materias.AsNoTracking().ToListAsync();
         }
 
-        public async Task<IEnumerable<MateriaMallaDto>> ObtenerDatosMallaAsync()
+        // CAMBIO 1: Agregamos el parámetro codCarrera
+        public async Task<IEnumerable<MateriaMallaDto>> ObtenerDatosMallaAsync(int codCarrera)
         {
-            // 1. Catálogo de Semestres
-            // Al ser 'int' estricto, no necesitamos trucos aquí.
+            // 1. Catálogo de Semestres (Igual que antes)
             var semestres = await _context.Semestres
-                                          .AsNoTracking()
-                                          .ToDictionaryAsync(k => k.CodSemestre, v => v.Nombre);
+                .AsNoTracking()
+                .ToDictionaryAsync(k => k.CodSemestre, v => v.Nombre);
 
-            // 2. Metadatos de Materias
-            var materias = await _context.Materias
-                                         .AsNoTracking()
-                                         .Select(m => new { m.CodMateria, m.NombreMateria })
-                                         .ToListAsync();
+            // 2. Metadatos de Materias CON NIVEL (EL CAMBIO IMPORTANTE)
+            // Asumimos que tienes un DbSet<MateriaCarrera> llamado MateriasCarrera.
+            // Si no lo tienes mapeado directo, usaremos un Join manual de LINQ.
+            
+            var materiasInfo = await (from mc in _context.MateriasCarrera
+                                      join m in _context.Materias on mc.CodMateria equals m.CodMateria
+                                      where mc.CodCarrera == codCarrera // Filtramos por la carrera solicitada
+                                      select new 
+                                      {
+                                          m.CodMateria,
+                                          m.NombreMateria,
+                                          // Aquí obtenemos el nivel real de la tabla MATERIA_CARRERA
+                                          Nivel = mc.NivelCarrera 
+                                      }).AsNoTracking().ToListAsync();
 
-            // 3. Aggregation (La parte crítica)
+            // Extraemos solo los IDs de las materias de esta carrera para optimizar la consulta de inscripciones
+            var idsMateriasCarrera = materiasInfo.Select(x => x.CodMateria).ToList();
+
+            // 3. Aggregation (Estadísticas)
+            // Optimizamos: .Where(...) para no traer inscripciones de materias que no son de esta carrera
             var estadisticasRaw = await _context.Inscripciones
                 .AsNoTracking()
+                .Where(i => idsMateriasCarrera.Contains((int)i.CodMateria)) 
                 .GroupBy(i => new { i.CodMateria, i.CodSemestre })
                 .Select(g => new 
                 {
-                    // FIX: Casteamos explícitamente a (int). 
-                    // Esto le dice al compilador: "Confía en mí, esto NO es nullable".
                     CodMateria = (int)g.Key.CodMateria,
                     CodSemestre = (int)g.Key.CodSemestre,
-                    
                     TotalInscritos = g.Count(),
-                    // Asumimos que Promedio puede ser null (double?), pero la comparación < 60 funciona igual
+                    // Lógica de reprobados mantenida
                     TotalReprobados = g.Count(x => (x.Promedio != null && x.Promedio < 60) || x.CodEstadoCurso == "REP")
                 })
                 .ToListAsync();
@@ -58,14 +69,13 @@ namespace KoopaBackend.Infrastructure.Repositories
             // 4. Procesamiento en Memoria
             var resultado = new List<MateriaMallaDto>();
 
-            // Ahora el Key del diccionario será estrictamente 'int'
             var statsPorMateria = estadisticasRaw
-                                    .GroupBy(x => x.CodMateria)
-                                    .ToDictionary(g => g.Key, g => g.ToList());
+                .GroupBy(x => x.CodMateria)
+                .ToDictionary(g => g.Key, g => g.ToList());
 
-            foreach (var mat in materias)
+            // Iteramos sobre las materias FILTRADAS por carrera y con su NIVEL real
+            foreach (var mat in materiasInfo)
             {
-                // Como mat.CodMateria es int y el diccionario es <int, List>, esto ya no debe fallar
                 var statsDeEstaMateria = statsPorMateria.ContainsKey(mat.CodMateria) 
                     ? statsPorMateria[mat.CodMateria] 
                     : new();
@@ -91,9 +101,12 @@ namespace KoopaBackend.Infrastructure.Repositories
                 resultado.Add(new MateriaMallaDto
                 {
                     Id = mat.CodMateria,
-                    Codigo = $"MATG-{mat.CodMateria}",
+                    Codigo = $"MAT-{mat.CodMateria}", // Ajuste estético opcional
                     Nombre = mat.NombreMateria,
-                    Nivel = "NIVEL GENÉRICO",
+                    
+                    // CAMBIO 3: Asignamos el nivel real traído de la base de datos
+                    Nivel = mat.Nivel ?? "SIN NIVEL", 
+                    
                     Color = colorHex,
                     Rendimiento = historial,
                     Stats = new StatsMallaDto
@@ -101,14 +114,15 @@ namespace KoopaBackend.Infrastructure.Repositories
                         Reprobados = totalReprobados,
                         ReprobadosPorcentaje = Math.Round(porcentaje, 2),
                         AprobaronRequisitos = totalInscritos - totalReprobados,
-                        Habilitados = totalInscritos + 10,
+                        Habilitados = totalInscritos + 10, // Tu lógica de negocio original
                         Descripcion = $"Datos consolidados para {mat.NombreMateria}",
                         NotaPie = "Fuente: DB2 Académico"
                     }
                 });
             }
 
-            return resultado;
+            // Opcional: Ordenar por Nivel para que el JSON salga ordenado (ej: Nivel 1, Nivel 2...)
+            return resultado.OrderBy(x => x.Nivel).ThenBy(x => x.Nombre);
         }
     }
 }
