@@ -62,7 +62,7 @@ namespace KoopaBackend.Infrastructure.Repositories
                     CodSemestre = (int)g.Key.CodSemestre,
                     TotalInscritos = g.Count(),
                     // Lógica de reprobados mantenida
-                    TotalReprobados = g.Count(x => (x.Promedio != null && x.Promedio < 60) || x.CodEstadoCurso == "REP")
+                    TotalReprobados = g.Count(x => (x.Promedio != null && x.Promedio < 6) || x.CodEstadoCurso == "REP")
                 })
                 .ToListAsync();
 
