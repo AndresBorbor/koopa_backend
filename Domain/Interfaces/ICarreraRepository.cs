@@ -8,6 +8,6 @@ namespace KoopaBackend.Domain.Interfaces
     public interface ICarreraRepository
     {
         // Métodos básicos (opcionales si ya los tienes en un genérico)
-        Task<IEnumerable<Carrera>> GetAllAsync();
+        Task<IEnumerable<Carrera>> ListarCarreras();
     }
 }

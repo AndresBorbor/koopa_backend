@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using KoopaBackend.Domain.Entities;
 
 namespace KoopaBackend.Application.DTOs // O el namespace que uses para DTOs
 {
@@ -9,13 +10,16 @@ namespace KoopaBackend.Application.DTOs // O el namespace que uses para DTOs
         public string Nombre { get; set; }
         public string Nivel { get; set; } // Ej: "NIVEL 100"
         public string Color { get; set; } // Ej: "#22c55e"
-        
+        public string Estado {get; set;}
         // Array de historial (Rendimiento)
         public List<RendimientoMallaDto> Rendimiento { get; set; } = new List<RendimientoMallaDto>();
+        public List<string> PreRequisitos { get; set; } = new List<string>();
+        public List<string> CoRequisitos { get; set; } = new List<string>();
         
         // Objeto de estadísticas (Stats)
         public StatsMallaDto Stats { get; set; }
     }
+
 
     public class RendimientoMallaDto
     {

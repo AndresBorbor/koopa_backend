@@ -17,7 +17,7 @@ namespace KoopaBackend.Infrastructure.Repositories
         }
 
         // 1. Obtener todas las carreras
-        public async Task<IEnumerable<Carrera>> GetAllAsync()
+        public async Task<IEnumerable<Carrera>> ListarCarreras()
         {
             // CORRECCIÓN: Usamos _context.Carreras (Plural, como está en el DbContext)
             return await _context.Carreras.ToListAsync();
