@@ -169,38 +169,44 @@ namespace KoopaBackend.Infrastructure.Repositories
     // =================================================================================
     // PASO 5: Evolución Histórica
     // =================================================================================
-    var queryHistorica = from ins in _context.Inscripciones.AsNoTracking()
-                            join est in _context.Estudiantes.AsNoTracking()
-                                on ins.CodEstudiante equals est.CodEstudiante
-                            join sem in _context.Semestres.AsNoTracking()
-                                on ins.CodSemestre equals sem.CodSemestre
-                            select new { ins, est, sem };
+var queryHistorica = from ins in _context.Inscripciones.AsNoTracking()
+                                 join est in _context.Estudiantes.AsNoTracking()
+                                     on ins.CodEstudiante equals est.CodEstudiante
+                                 join sem in _context.Semestres.AsNoTracking()
+                                     on ins.CodSemestre equals sem.CodSemestre
+                                 select new { ins, est, sem };
 
-    if (codCarrera.HasValue)
-        queryHistorica = queryHistorica.Where(x => x.est.CodCarrera == codCarrera.Value);
+            // Filtros para la histórica
+            if (codCarrera.HasValue)
+            {
+                queryHistorica = queryHistorica.Where(x => x.est.CodCarrera == codCarrera.Value);
+            }
 
-    if (semestreActual != null)
-        queryHistorica = queryHistorica.Where(x => x.sem.FechaInicio <= semestreActual.FechaInicio);
+            if (semestreActual != null)
+            {
+                queryHistorica = queryHistorica.Where(x => x.sem.FechaInicio <= semestreActual.FechaInicio);
+            }
 
-    var datosEvolucion = await queryHistorica
-        .GroupBy(x => new { x.sem.Nombre, x.sem.Anio, x.sem.Termino, x.sem.FechaInicio })
-        .Select(g => new
-        {
-            NombreSemestre = g.Key.Nombre ?? (g.Key.Anio + " - " + g.Key.Termino),
-            FechaInicio = g.Key.FechaInicio,
-            TotalInscripciones = g.Count()
-        })
-        .OrderByDescending(x => x.FechaInicio)
-        .Take(6)
-        .ToListAsync();
+            var datosEvolucion = await queryHistorica
+                .GroupBy(x => new { x.sem.Nombre, x.sem.Anio, x.sem.Termino, x.sem.FechaInicio })
+                .Select(g => new
+                {
+                    NombreSemestre = g.Key.Nombre ?? (g.Key.Anio + " - " + g.Key.Termino),
+                    FechaInicio = g.Key.FechaInicio,
+                    TotalInscripciones = g.Count()
+                })
+                .OrderBy(x => x.FechaInicio) // CORRECCIÓN: Orden ascendente directo (Old -> New)
+                // .Take(6) <--- ESTO ERA LO QUE LIMITABA A 2024. ¡ELIMINADO!
+                .ToListAsync();
 
-    datosEvolucion = datosEvolucion.OrderBy(x => x.FechaInicio).ToList();
+            // Ya no hace falta el reordenamiento en memoria porque lo hicimos en la query
+            // datosEvolucion = datosEvolucion.OrderBy(x => x.FechaInicio).ToList(); 
 
-    var evolucionDto = new EvolucionIngresosDto
-    {
-        Periodos = datosEvolucion.Select(x => x.NombreSemestre).ToList(),
-        CantidadIngresos = datosEvolucion.Select(x => x.TotalInscripciones).ToList()
-    };
+            var evolucionDto = new EvolucionIngresosDto
+            {
+                Periodos = datosEvolucion.Select(x => x.NombreSemestre).ToList(),
+                CantidadIngresos = datosEvolucion.Select(x => x.TotalInscripciones).ToList()
+            };
 
     // =================================================================================
     // PASO 6: Rendimiento por Carrera
