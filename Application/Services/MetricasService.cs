@@ -13,17 +13,12 @@ namespace KoopaBackend.Application.Services
             _repository = repository;
         }
 
-        public async Task<DashboardDto> ObtenerDashboardAsync(int? codCarrera, int anio, string termino)
+        public async Task<DashboardDto> ObtenerDashboardAsync(int? codCarrera, int? anio, string? termino)
         {
             // 1. Validaciones de Negocio
-            if (anio < 1900 || anio > 3000)
+            if (anio.HasValue && (anio < 1900 || anio > 3000))
             {
                 throw new ArgumentException("El año proporcionado no es válido.");
-            }
-
-            if (string.IsNullOrEmpty(termino))
-            {
-                throw new ArgumentException("El término (ej: '1S', '2S') es obligatorio.");
             }
 
             // 2. Llamada al Repositorio

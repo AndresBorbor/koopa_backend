@@ -7,7 +7,7 @@ namespace KoopaBackend.Domain.Interfaces
     public interface IMetricasRepository
     {
         // CAMBIO: Ahora recibe anio y termino en lugar de codPeriodo directo
-        Task<DashboardDto> ObtenerMetricasAsync(int? codCarrera, int anio, string termino);
+        Task<DashboardDto> ObtenerMetricasAsync(int? codCarrera, int? anio, string? termino);
     }
     public class MateriaPobladaDto
     {
@@ -23,8 +23,14 @@ namespace KoopaBackend.Domain.Interfaces
         [JsonPropertyName("tasa_reprobacion")]
         public double TasaReprobacion { get; set; }
 
+        [JsonPropertyName("total_reprobados")]
+        public int TotalReprobados { get; set; }
+
         [JsonPropertyName("tasa_graduados")]
         public double TasaGraduados { get; set; }
+
+        [JsonPropertyName("total_graduados")]
+        public int TotalGraduados { get; set; }
 
         [JsonPropertyName("promedio_carrera")]
         public double PromedioCarrera { get; set; }

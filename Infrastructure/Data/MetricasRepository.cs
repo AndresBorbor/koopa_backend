@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using KoopaBackend.Domain.Interfaces;
 using KoopaBackend.Infrastructure.Data;
+using KoopaBackend.Domain.Entities; // Asegúrate de tener este using para la entidad Semestre
 
 namespace KoopaBackend.Infrastructure.Repositories
 {
@@ -17,73 +18,101 @@ namespace KoopaBackend.Infrastructure.Repositories
             _context = context;
         }
 
-public async Task<DashboardDto> ObtenerMetricasAsync(int? codCarrera, int anio, string termino)
+        // 1. Actualizamos la firma para aceptar nulos en anio y termino
+        public async Task<DashboardDto> ObtenerMetricasAsync(int? codCarrera, int? anio, string? termino)
 {
-    // CORRECCIÓN AQUÍ: Usamos 'decimal' (con la 'm' al final) para que sea compatible con la BD
-    decimal notaMinima = 6.0m; 
+    // CONFIGURACIÓN: Nota mínima para aprobar (Escala de 10)
+    decimal notaMinima = 6.0m;
 
     // =================================================================================
-    // PASO 1: Obtener el Semestre Actual
+    // PASO 1: Determinar el Contexto de Tiempo (Semestre)
     // =================================================================================
-    var semestreActual = await _context.Semestres
-        .AsNoTracking()
-        .FirstOrDefaultAsync(s => s.Anio == anio && s.Termino == termino);
+    Semestre? semestreActual = null;
+    int? codSemestreActual = null;
 
-    if (semestreActual == null)
+    if (anio.HasValue && !string.IsNullOrEmpty(termino))
     {
-        throw new Exception($"No se encontró el periodo {anio} - {termino}");
+        semestreActual = await _context.Semestres
+            .AsNoTracking()
+            .FirstOrDefaultAsync(s => s.Anio == anio && s.Termino == termino);
+
+        if (semestreActual == null)
+        {
+            throw new Exception($"No se encontró el periodo {anio} - {termino}");
+        }
+        codSemestreActual = semestreActual.CodSemestre;
     }
 
-    int codSemestreActual = semestreActual.CodSemestre;
-
     // =================================================================================
-    // PASO 2: Consulta Base
+    // PASO 2: Construir la Consulta Base
     // =================================================================================
     var queryBase = from ins in _context.Inscripciones.AsNoTracking()
                     join est in _context.Estudiantes.AsNoTracking()
                         on ins.CodEstudiante equals est.CodEstudiante
-                    where ins.CodSemestre == codSemestreActual
                     select new { ins, est };
+
+    // Filtros
+    if (codSemestreActual.HasValue)
+    {
+        queryBase = queryBase.Where(x => x.ins.CodSemestre == codSemestreActual.Value);
+    }
 
     if (codCarrera.HasValue)
     {
         queryBase = queryBase.Where(x => x.est.CodCarrera == codCarrera.Value);
     }
 
-            // =================================================================================
-            // PASO 3: Métricas Escalares (Del periodo actual)
-            // =================================================================================
-            
-            // A. Cantidad de Estudiantes (Personas únicas)
-            int cantEstudiantes = await queryBase
-                .Select(x => x.est.CodEstudiante)
-                .Distinct()
-                .CountAsync();
-  
-            // B. Datos para tasas (En memoria para cálculo rápido)
-            var datosAcademicos = await queryBase
-                .Select(x => new { x.ins.Promedio, x.ins.CodEstadoCurso })
-                .ToListAsync();
-         
+    // =================================================================================
+    // PASO 3: Métricas Escalares (CORREGIDO)
+    // =================================================================================
+    
+    // A. Cantidad de Estudiantes (Personas únicas)
+    int cantEstudiantes = await queryBase
+        .Select(x => x.est.CodEstudiante)
+        .Distinct()
+        .CountAsync();
 
-            int totalRegistros = datosAcademicos.Count;
-            
-            // Reprobados (Promedio < 6 O Estado == 'REP')
-            int totalReprobados = datosAcademicos.Count(x => (x.Promedio != null && x.Promedio < 6) || x.CodEstadoCurso == "REP");
+    // B. Reprobados (CORREGIDO: Lógica igual a Graduados)
+    // Buscamos los estudiantes únicos que hayan reprobado al menos una materia
+    var queryReprobados = queryBase.Where(x => 
+        (x.ins.Promedio != null && x.ins.Promedio < notaMinima) || 
+        x.ins.CodEstadoCurso == "REP"
+    ).Select(x => x.ins.CodEstudiante);
 
+    // Usamos Distinct() para contar personas, no exámenes fallidos
+    int totalReprobados = await queryReprobados.Distinct().CountAsync();
 
-            double tasaReprobacion = totalRegistros > 0 
-                ? Math.Round(((double)totalReprobados / totalRegistros) * 100, 2) 
-                : 0;
+    double tasaReprobacion = cantEstudiantes > 0
+        ? Math.Round(((double)totalReprobados / cantEstudiantes) * 100, 2)
+        : 0;
 
+    // Calculamos el promedio directo en base de datos (sin traer lista a memoria)
     double promedioCarrera = 0;
-    if (datosAcademicos.Any(x => x.Promedio != null))
+    var promediosValidos = queryBase.Where(x => x.ins.Promedio != null);
+    
+    // Verificamos si hay notas antes de promediar para evitar excepción de división por cero
+    if (await promediosValidos.AnyAsync())
     {
-        decimal promedioDecimal = datosAcademicos
-                                    .Where(x => x.Promedio != null)
-                                    .Average(x => x.Promedio!.Value);
-        promedioCarrera = Math.Round((double)promedioDecimal, 2);
+        decimal prom = await promediosValidos.AverageAsync(x => x.ins.Promedio!.Value);
+        promedioCarrera = Math.Round((double)prom, 2);
     }
+
+    // =================================================================================
+    // C. Tasa de Graduados
+    // =================================================================================
+    var queryGraduados = from q in queryBase
+                            join mat in _context.Materias.AsNoTracking()
+                                on q.ins.CodMateria equals mat.CodMateria
+                            where mat.CodTipoCredito == 6 // Tesis/Graduación
+                            && q.ins.Promedio != null 
+                            && q.ins.Promedio >= notaMinima 
+                            select q.ins.CodEstudiante;
+
+    int totalGraduados = await queryGraduados.Distinct().CountAsync();
+
+    double tasaGraduados = cantEstudiantes > 0
+        ? Math.Round(((double)totalGraduados / cantEstudiantes) * 100, 2)
+        : 0;
 
     // =================================================================================
     // PASO 4: Top Materias Reprobadas
@@ -93,7 +122,6 @@ public async Task<DashboardDto> ObtenerMetricasAsync(int? codCarrera, int anio, 
         .Select(g => new
         {
             CodMateria = g.Key.GetValueOrDefault(),
-            // Comparación corregida
             Reprobados = g.Count(y => (y.ins.Promedio != null && y.ins.Promedio < notaMinima) || y.ins.CodEstadoCurso == "REP")
         })
         .OrderByDescending(x => x.Reprobados)
@@ -118,7 +146,7 @@ public async Task<DashboardDto> ObtenerMetricasAsync(int? codCarrera, int anio, 
 
     var idsMatPob = topMateriasPobladas.Select(m => m.CodMateria).ToList();
 
-    // Union de IDs para consultar nombres una sola vez
+    // Union y Nombres
     var todosIdsMaterias = idsMatRep.Union(idsMatPob).Distinct().ToList();
 
     var nombresMaterias = await _context.Materias
@@ -142,17 +170,17 @@ public async Task<DashboardDto> ObtenerMetricasAsync(int? codCarrera, int anio, 
     // PASO 5: Evolución Histórica
     // =================================================================================
     var queryHistorica = from ins in _context.Inscripciones.AsNoTracking()
-                         join est in _context.Estudiantes.AsNoTracking()
-                             on ins.CodEstudiante equals est.CodEstudiante
-                         join sem in _context.Semestres.AsNoTracking()
-                             on ins.CodSemestre equals sem.CodSemestre
-                         where sem.FechaInicio <= semestreActual.FechaInicio
-                         select new { ins, est, sem };
+                            join est in _context.Estudiantes.AsNoTracking()
+                                on ins.CodEstudiante equals est.CodEstudiante
+                            join sem in _context.Semestres.AsNoTracking()
+                                on ins.CodSemestre equals sem.CodSemestre
+                            select new { ins, est, sem };
 
     if (codCarrera.HasValue)
-    {
         queryHistorica = queryHistorica.Where(x => x.est.CodCarrera == codCarrera.Value);
-    }
+
+    if (semestreActual != null)
+        queryHistorica = queryHistorica.Where(x => x.sem.FechaInicio <= semestreActual.FechaInicio);
 
     var datosEvolucion = await queryHistorica
         .GroupBy(x => new { x.sem.Nombre, x.sem.Anio, x.sem.Termino, x.sem.FechaInicio })
@@ -182,8 +210,7 @@ public async Task<DashboardDto> ObtenerMetricasAsync(int? codCarrera, int anio, 
         .Select(g => new
         {
             CodCarrera = g.Key.GetValueOrDefault(),
-            Total = g.Count(),
-            // Comparación corregida
+            Total = g.Count(), // Total de registros (materias inscritas)
             Reprobados = g.Count(y => (y.ins.Promedio != null && y.ins.Promedio < notaMinima) || y.ins.CodEstadoCurso == "REP")
         })
         .ToListAsync();
@@ -208,8 +235,13 @@ public async Task<DashboardDto> ObtenerMetricasAsync(int? codCarrera, int anio, 
     return new DashboardDto
     {
         CantEstudiantes = cantEstudiantes,
+        
+        TotalReprobados = totalReprobados, // Ahora son estudiantes únicos
         TasaReprobacion = tasaReprobacion,
-        TasaGraduados = 0,
+        
+        TotalGraduados = totalGraduados,
+        TasaGraduados = tasaGraduados,
+        
         PromedioCarrera = promedioCarrera,
         MateriasMayorReprobacion = listaMateriasRepDto,
         MateriasMasPobladas = listaMateriasPobDto,
