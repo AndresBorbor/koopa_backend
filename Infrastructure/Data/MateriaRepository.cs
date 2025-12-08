@@ -26,123 +26,94 @@ namespace KoopaBackend.Infrastructure.Repositories
 
         public async Task<IEnumerable<MateriaMallaDto>> ObtenerDatosMallaAsync(int codCarrera)
         {
-            // 1. Catálogo de Semestres
-            var semestres = await _context.Semestres
+            // 1. Obtener datos de la VISTA SQL
+            var datosVista = await _context.MallaStatsViews
                 .AsNoTracking()
-                .ToDictionaryAsync(k => k.CodSemestre, v => v.Nombre);
-
-            // 2. Metadatos de Materias (Filtradas por Carrera)
-            var materiasInfo = await (from mc in _context.MateriasCarrera
-                                      join m in _context.Materias on mc.CodMateria equals m.CodMateria
-                                      where mc.CodCarrera == codCarrera
-                                      select new
-                                      {
-                                          m.CodMateria,
-                                          m.NombreMateria,
-                                          Nivel = mc.NivelCarrera
-                                      }).AsNoTracking().ToListAsync();
-
-            var idsMateriasCarrera = materiasInfo.Select(x => x.CodMateria).ToList();
-            Console.WriteLine(idsMateriasCarrera);
-            // 3. Obtener Requisitos (Optimización: Una sola consulta)
-            // Se usa la entidad Requisito que definiste (tabla REQUISITOS)
-            var requisitosRaw = await _context.Requisitos
-                .AsNoTracking()
-                .Where(r => idsMateriasCarrera.Contains(r.CodMateria))
+                .Where(x => x.CodCarrera == codCarrera)
+                .OrderBy(x => x.NivelCarrera)
+                .ThenBy(x => x.CodSemestre)
                 .ToListAsync();
 
-            // Agrupamos en memoria por CodMateria para acceso rápido
-            var requisitosMap = requisitosRaw
+            if (!datosVista.Any()) return new List<MateriaMallaDto>();
+
+            // 2. Obtener Requisitos para las flechas
+            var idsMaterias = datosVista.Select(x => x.CodMateria).Distinct().ToList();
+            
+            var requisitosRaw = await _context.Requisitos
+                .AsNoTracking()
+                .Where(r => idsMaterias.Contains(r.CodMateria))
+                .ToListAsync();
+
+            var mapaRequisitos = requisitosRaw
                 .GroupBy(r => r.CodMateria)
                 .ToDictionary(g => g.Key, g => g.ToList());
 
-            // 4. Estadísticas (Inscripciones)
-            var estadisticasRaw = await _context.Inscripciones
-                .AsNoTracking()
-                .Where(i => idsMateriasCarrera.Contains((int)i.CodMateria))
-                .GroupBy(i => new { i.CodMateria, i.CodSemestre })
-                .Select(g => new
+            // 3. Agrupar y Mapear al DTO Nuevo
+            var resultado = datosVista
+                .GroupBy(x => new { x.CodMateria, x.NombreMateria, x.NivelCarrera })
+                .Select(grupo => 
                 {
-                    CodMateria = (int)g.Key.CodMateria,
-                    CodSemestre = (int)g.Key.CodSemestre,
-                    TotalInscritos = g.Count(),
-                    TotalReprobados = g.Count(x => (x.Promedio != null && x.Promedio < 6) || x.CodEstadoCurso == "REP")
-                })
-                .ToListAsync();
-
-            var statsPorMateria = estadisticasRaw
-                .GroupBy(x => x.CodMateria)
-                .ToDictionary(g => g.Key, g => g.ToList());
-
-            // 5. Construcción del Resultado
-            var resultado = new List<MateriaMallaDto>();
-
-            foreach (var mat in materiasInfo)
-            {
-                // Datos de Estadísticas
-                var statsDeEstaMateria = statsPorMateria.ContainsKey(mat.CodMateria)
-                    ? statsPorMateria[mat.CodMateria]
-                    : new();
-
-                var historial = statsDeEstaMateria
-                    .Select(s => new RendimientoMallaDto
+                    // A. Llenar el Diccionario Stats
+                    var diccionarioStats = new Dictionary<string, StatsMallaDto>();
+                    
+                    foreach(var fila in grupo)
                     {
-                        Periodo = semestres.ContainsKey(s.CodSemestre) ? semestres[s.CodSemestre] : "Desconocido",
-                        Inscripciones = s.TotalInscritos,
-                        Reprobados = s.TotalReprobados
-                    })
-                    .OrderBy(h => h.Periodo)
-                    .ToList();
+                        double porcentaje = fila.InscritosActuales > 0 
+                            ? (double)fila.ReprobadosSemestreAnterior / fila.InscritosActuales 
+                            : 0;
 
-                int totalInscritos = statsDeEstaMateria.Sum(x => x.TotalInscritos);
-                int totalReprobados = statsDeEstaMateria.Sum(x => x.TotalReprobados);
-                double porcentaje = totalInscritos > 0 ? (double)totalReprobados / totalInscritos : 0;
-                string colorHex = porcentaje > 0.30 ? "#ef4444" : "#22c55e";
-
-                // --- LOGICA DE REQUISITOS ---
-                var misRequisitos = requisitosMap.ContainsKey(mat.CodMateria) 
-                    ? requisitosMap[mat.CodMateria] 
-                    : new List<Requisito>();
-
-                // C. Prerrequisitos 
-                // Usamos CodTipoRequisito para filtrar y CodMateriaRequisito para obtener el ID
-                var listaPrerrequisitos = misRequisitos
-                    .Where(r => r.CodTipoRequisito == "PR") 
-                    .Select(r => r.CodMateriaRequisito.ToString()) 
-                    .ToList();
-
-                // D. Corequisitos
-                var listaCorequisitos = misRequisitos
-                    .Where(r => r.CodTipoRequisito == "CO" || r.CodTipoRequisito == "COR") 
-                    .Select(r => r.CodMateriaRequisito.ToString())
-                    .ToList();
-
-                resultado.Add(new MateriaMallaDto
-                {
-                    Id = mat.CodMateria,
-                    Codigo = $"MAT-{mat.CodMateria}",
-                    Nombre = mat.NombreMateria,
-                    Nivel = mat.Nivel ?? "SIN NIVEL",
-                    Color = colorHex,
-                    Rendimiento = historial,
-                    Estado = "pendiente",
-                    // Listas de IDs de materias requisito
-                    PreRequisitos = listaPrerrequisitos,
-                    CoRequisitos = listaCorequisitos,
-
-                    Stats = new StatsMallaDto
-                    {
-                        Reprobados = totalReprobados,
-                        ReprobadosPorcentaje = Math.Round(porcentaje, 2),
-                        AprobaronRequisitos = totalInscritos - totalReprobados,
-                        Habilitados = totalInscritos + 10,
-                        Descripcion = $"Datos consolidados para {mat.NombreMateria}",
-                        NotaPie = "Fuente: DB2 Académico"
+                        diccionarioStats[fila.NombreSemestre] = new StatsMallaDto
+                        {
+                            Inscritos = fila.InscritosActuales,  // ✅ Ahora sí existe
+                            Reprobados = fila.ReprobadosSemestreAnterior,
+                            Habilitados = fila.HabilitadosParaTomarla,
+                            ReprobadosPorcentaje = Math.Round(porcentaje, 2),
+                            Descripcion = fila.NombreSemestre,
+                            NotaPie = "DB2 View"
+                        };
                     }
-                });
-            }
 
-            return resultado.OrderBy(x => x.Nivel).ThenBy(x => x.Nombre);
+                    // B. Totales Generales
+                    int totalInscritos = grupo.Sum(x => x.InscritosActuales);
+                    int totalReprobados = grupo.Sum(x => x.ReprobadosSemestreAnterior);
+                    double porcentajeGlobal = totalInscritos > 0 ? (double)totalReprobados / totalInscritos : 0;
+                    string colorHex = porcentajeGlobal > 0.30 ? "#ef4444" : "#22c55e";
+
+                    // C. Requisitos
+                    var misReqs = mapaRequisitos.ContainsKey(grupo.Key.CodMateria) 
+                        ? mapaRequisitos[grupo.Key.CodMateria] 
+                        : new List<Requisito>();
+
+                    // D. Retorno del DTO
+                    return new MateriaMallaDto
+                    {
+                        Id = grupo.Key.CodMateria,
+                        Codigo = $"MAT-{grupo.Key.CodMateria}",
+                        Nombre = grupo.Key.NombreMateria,
+                        Nivel = grupo.Key.NivelCarrera,
+                        
+                        // ✅ Propiedades que daban error antes, ahora funcionarán
+                        CantidadEstudiantes = totalInscritos, 
+                        Color = colorHex,
+                        Estado = "disponible",
+                        
+                        Stats = diccionarioStats, // ✅ Ahora acepta el diccionario
+
+                        PreRequisitos = misReqs.Where(r => r.CodTipoRequisito == "PR")
+                                               .Select(r => r.CodMateriaRequisito.ToString()).ToList(),
+                        CoRequisitos = misReqs.Where(r => r.CodTipoRequisito == "CO" || r.CodTipoRequisito == "COR")
+                                              .Select(r => r.CodMateriaRequisito.ToString()).ToList(),
+                        
+                        Rendimiento = diccionarioStats.Select(kv => new RendimientoMallaDto { 
+                            Periodo = kv.Key, 
+                            Inscripciones = kv.Value.Inscritos,
+                            Reprobados = kv.Value.Reprobados
+                        }).ToList()
+                    };
+                })
+                .ToList();
+
+            return resultado;
         }
     }
 }
