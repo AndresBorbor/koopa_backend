@@ -62,7 +62,7 @@ namespace KoopaBackend.Infrastructure.Repositories
                             ? (double)fila.ReprobadosSemestreAnterior / fila.InscritosActuales 
                             : 0;
 
-                        diccionarioStats[fila.NombreSemestre] = new StatsMallaDto
+                        diccionarioStats[fila.CodSemestre] = new StatsMallaDto
                         {
                             Inscritos = fila.InscritosActuales,  // ✅ Ahora sí existe
                             Reprobados = fila.ReprobadosSemestreAnterior,
@@ -88,7 +88,7 @@ namespace KoopaBackend.Infrastructure.Repositories
                     return new MateriaMallaDto
                     {
                         Id = grupo.Key.CodMateria,
-                        Codigo = $"MAT-{grupo.Key.CodMateria}",
+                        Codigo = $"{grupo.Key.CodMateria}",
                         Nombre = grupo.Key.NombreMateria,
                         Nivel = grupo.Key.NivelCarrera,
                         
