@@ -29,9 +29,6 @@ public class MateriaController : ControllerBase
         {
             // Pasamos el ID al servicio
             var datos = await _service.ObtenerDatosMallaAsync(carreraId);
-            Console.WriteLine("********************");
-            Console.WriteLine(datos);
-            Console.WriteLine("********************");
             if (datos == null || !datos.Any())
             {
                 // Un 204 No Content es a veces mejor que 404 si la carrera existe pero no tiene malla cargada,

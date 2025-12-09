@@ -34,6 +34,7 @@ builder.Services.AddScoped<IEstudianteRepository, EstudianteRepository>();
 builder.Services.AddScoped<IFacultadRepository, FacultadRepository>();
 builder.Services.AddScoped<IPlanificacionRepository, PlanificacionRepository>();
 builder.Services.AddScoped<IProgramaRepository, ProgramaRepository>();
+builder.Services.AddScoped<IFiltroRepository, FiltroRepository>();
 
 // Repositorios de Tablas Puente y Catálogos
 builder.Services.AddScoped<IMateriaCarreraRepository, MateriaCarreraRepository>();
@@ -53,6 +54,7 @@ builder.Services.AddScoped<MateriaCarreraService>();
 builder.Services.AddScoped<RequisitoService>();
 builder.Services.AddScoped<TipoCreditoService>();
 builder.Services.AddScoped<TipoRequisitoService>();
+builder.Services.AddScoped<FiltroService>();
 
 
 
