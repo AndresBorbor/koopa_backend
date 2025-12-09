@@ -49,24 +49,23 @@ namespace KoopaBackend.Infrastructure.Data
             modelBuilder.Entity<Requisito>()
                 .HasKey(r => new { r.CodMateria, r.CodMateriaRequisito, r.CodTipoRequisito });
 
-            modelBuilder.Entity<MallaStatsView>(e =>
+           modelBuilder.Entity<MallaStatsView>(entity =>
             {
-                e.HasNoKey(); // Es vista
-                e.ToView("VW_MATERIAS_MALLA", "dbo"); // Tu nombre de vista y esquema
+                entity.ToView("VW_MATERIAS_MALLA", "dbo");
+                entity.HasNoKey();
 
-                // 👇 AQUÍ ESTÁ LA SOLUCIÓN: Mapeo explícito propiedad -> columna
-                e.Property(v => v.CodCarrera).HasColumnName("COD_CARRERA");
-                e.Property(v => v.CodMateria).HasColumnName("COD_MATERIA");
-                e.Property(v => v.NombreMateria).HasColumnName("NOMBRE_MATERIA");
-                e.Property(v => v.NivelCarrera).HasColumnName("NIVEL_CARRERA"); // Revisa si en tu vista es "NIVEL" o "NIVEL_CARRERA"
-                
-                e.Property(v => v.CodSemestre).HasColumnName("COD_SEMESTRE");
-                e.Property(v => v.NombreSemestre).HasColumnName("NOMBRE_SEMESTRE");
-                
-                e.Property(v => v.InscritosActuales).HasColumnName("INSCRITOS_ACTUALES");
-                e.Property(v => v.ReprobadosSemestreAnterior).HasColumnName("REPROBADOS_SEMESTRE_ANTERIOR");
-                e.Property(v => v.HabilitadosParaTomarla).HasColumnName("HABILITADOS_PARA_TOMARLA");
+                entity.Property(e => e.CodCarrera).HasColumnName("COD_CARRERA");
+                entity.Property(e => e.CodMateria).HasColumnName("COD_MATERIA");
+                entity.Property(e => e.NombreMateria).HasColumnName("NOMBRE_MATERIA");
+                entity.Property(e => e.NivelCarrera).HasColumnName("NIVEL_CARRERA");
+                entity.Property(e => e.CodSemestre).HasColumnName("COD_SEMESTRE");
+                entity.Property(e => e.NombreSemestre).HasColumnName("NOMBRE_SEMESTRE");
+                entity.Property(e => e.InscritosActuales).HasColumnName("INSCRITOS_ACTUALES");
+                entity.Property(e => e.ReprobadosSemestreAnterior).HasColumnName("REPROBADOS_SEMESTRE_ANTERIOR");
+                entity.Property(e => e.HabilitadosParaTomarla).HasColumnName("HABILITADOS_PARA_TOMARLA");
             });
+
+            
 
         }
 

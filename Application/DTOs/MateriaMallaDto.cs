@@ -27,7 +27,6 @@ namespace KoopaBackend.Application.DTOs
 
     public class StatsMallaDto
     {
-        // 👇 ESTE DABA ERROR CS1061 (Inscritos no existía)
         public int Inscritos { get; set; }
         public int Reprobados { get; set; }
         public double ReprobadosPorcentaje { get; set; }
