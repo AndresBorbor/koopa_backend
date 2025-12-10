@@ -4,7 +4,7 @@ namespace KoopaBackend.Application.DTOs
 {
     public class FiltroDto
     {
-        public int Id { get; set; }
+        public string Id { get; set; }
         public string Value { get; set; }
     }
 
