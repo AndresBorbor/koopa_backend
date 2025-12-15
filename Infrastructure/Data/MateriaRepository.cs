@@ -24,16 +24,24 @@ namespace KoopaBackend.Infrastructure.Repositories
             return await _context.Materias.AsNoTracking().ToListAsync();
         }
 
-        public async Task<IEnumerable<MateriaMallaDto>> ObtenerDatosMallaAsync(int codCarrera)
+       public async Task<IEnumerable<MateriaMallaDto>> ObtenerDatosMallaAsync(int codCarrera, string? codSemestre)
         {
-           
             // 1. Obtener datos de la VISTA SQL
-            var datosVista = await _context.MallaStatsViews
+            var query = _context.MallaStatsViews
                 .AsNoTracking()
-                .Where(x => x.CodCarrera == codCarrera)
+                .Where(x => x.CodCarrera == codCarrera);
+
+
+            if (!string.IsNullOrEmpty(codSemestre) && codSemestre != "all")
+            {
+                query = query.Where(x => x.CodSemestre == int.Parse(codSemestre));
+            }
+
+            var datosVista = await query
                 .OrderBy(x => x.NivelCarrera)
                 .ThenBy(x => x.CodSemestre)
                 .ToListAsync();
+
             if (!datosVista.Any()) return new List<MateriaMallaDto>();
 
             // 2. Obtener Requisitos para las flechas
@@ -53,7 +61,6 @@ namespace KoopaBackend.Infrastructure.Repositories
                 .GroupBy(x => new { x.CodMateria, x.NombreMateria, x.NivelCarrera })
                 .Select(grupo => 
                 {
-                    // A. Llenar el Diccionario Stats
                     var diccionarioStats = new Dictionary<string, StatsMallaDto>();
                     
                     foreach(var fila in grupo)
@@ -62,9 +69,10 @@ namespace KoopaBackend.Infrastructure.Repositories
                             ? (double)fila.ReprobadosSemestreAnterior / fila.InscritosActuales 
                             : 0;
 
+                        // Usamos fila.CodSemestre.ToString() como Clave del diccionario
                         diccionarioStats[fila.CodSemestre.ToString()] = new StatsMallaDto
                         {
-                            Inscritos = fila.InscritosActuales,  // ✅ Ahora sí existe
+                            Inscritos = fila.InscritosActuales,
                             Reprobados = fila.ReprobadosSemestreAnterior,
                             Habilitados = fila.HabilitadosParaTomarla,
                             ReprobadosPorcentaje = Math.Round(porcentaje, 2),
@@ -72,18 +80,18 @@ namespace KoopaBackend.Infrastructure.Repositories
                             NotaPie = "DB2 View"
                         };
                     }
-                    // B. Totales Generales
+
+                    // Totales
                     int totalInscritos = grupo.Sum(x => x.InscritosActuales);
                     int totalReprobados = grupo.Sum(x => x.ReprobadosSemestreAnterior);
                     double porcentajeGlobal = totalInscritos > 0 ? (double)totalReprobados / totalInscritos : 0;
                     string colorHex = porcentajeGlobal > 0.30 ? "#ef4444" : "#22c55e";
 
-                    // C. Requisitos
+                    // Requisitos
                     var misReqs = mapaRequisitos.ContainsKey(grupo.Key.CodMateria) 
                         ? mapaRequisitos[grupo.Key.CodMateria] 
                         : new List<Requisito>();
 
-                    // D. Retorno del DTO
                     return new MateriaMallaDto
                     {
                         Id = grupo.Key.CodMateria,
@@ -91,17 +99,16 @@ namespace KoopaBackend.Infrastructure.Repositories
                         Nombre = grupo.Key.NombreMateria,
                         Nivel = grupo.Key.NivelCarrera,
                         
-                        // ✅ Propiedades que daban error antes, ahora funcionarán
                         CantidadEstudiantes = totalInscritos, 
                         Color = colorHex,
-                        Estado = "disponible2",
+                        Estado = "disponible",
                         
-                        Stats = diccionarioStats, // ✅ Ahora acepta el diccionario
+                        Stats = diccionarioStats,
                                 
                         PreRequisitos = misReqs.Where(r => r.CodTipoRequisito == "PR")
-                                               .Select(r => r.CodMateriaRequisito.ToString()).ToList(),
+                                            .Select(r => r.CodMateriaRequisito.ToString()).ToList(),
                         CoRequisitos = misReqs.Where(r => r.CodTipoRequisito == "CO" || r.CodTipoRequisito == "COR")
-                                              .Select(r => r.CodMateriaRequisito.ToString()).ToList(),
+                                            .Select(r => r.CodMateriaRequisito.ToString()).ToList(),
                         Rendimiento = diccionarioStats.Select(kv => new RendimientoMallaDto { 
                             Periodo = kv.Key, 
                             Inscripciones = kv.Value.Inscritos,
