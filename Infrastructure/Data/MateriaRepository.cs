@@ -85,8 +85,13 @@ namespace KoopaBackend.Infrastructure.Repositories
                     int totalInscritos = grupo.Sum(x => x.InscritosActuales);
                     int totalReprobados = grupo.Sum(x => x.ReprobadosSemestreAnterior);
                     double porcentajeGlobal = totalInscritos > 0 ? (double)totalReprobados / totalInscritos : 0;
-                    string colorHex = porcentajeGlobal > 0.30 ? "#ef4444" : "#22c55e";
+                    string colorHex = porcentajeGlobal > 0.30 ? "#ef4444"       // Rojo
+                                    : porcentajeGlobal > 0.15 ? "#eab308"       // Amarillo
+                                    : "#22c55e";                                // Verde
 
+                    string estado = porcentajeGlobal > 0.30 ? "Alto índice de reprobación"
+                                : porcentajeGlobal > 0.15 ? "Índice de reprobación moderado"
+                                : "Bajo índice de reprobación";
                     // Requisitos
                     var misReqs = mapaRequisitos.ContainsKey(grupo.Key.CodMateria) 
                         ? mapaRequisitos[grupo.Key.CodMateria] 
@@ -101,19 +106,15 @@ namespace KoopaBackend.Infrastructure.Repositories
                         
                         CantidadEstudiantes = totalInscritos, 
                         Color = colorHex,
-                        Estado = "disponible",
-                        
+                        Estado = estado, 
                         Stats = diccionarioStats,
                                 
                         PreRequisitos = misReqs.Where(r => r.CodTipoRequisito == "PR")
                                             .Select(r => r.CodMateriaRequisito.ToString()).ToList(),
                         CoRequisitos = misReqs.Where(r => r.CodTipoRequisito == "CO" || r.CodTipoRequisito == "COR")
                                             .Select(r => r.CodMateriaRequisito.ToString()).ToList(),
-                        Rendimiento = diccionarioStats.Select(kv => new RendimientoMallaDto { 
-                            Periodo = kv.Key, 
-                            Inscripciones = kv.Value.Inscritos,
-                            Reprobados = kv.Value.Reprobados
-                        }).ToList()
+                        Rendimiento = new List<RendimientoMallaDto>()
+                       
                     };
                 })
                 .ToList();
