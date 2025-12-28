@@ -17,6 +17,7 @@ namespace KoopaBackend.Infrastructure.Data
         public DbSet<TipoRequisito> TiposRequisito { get; set; }
         public DbSet<Materia> Materias { get; set; }
         public DbSet<Estudiante> Estudiantes { get; set; }
+        public DbSet<Usuario> Usuarios { get; set; }
 
         // =========================================================================
         // 2. TABLAS PUENTE (Relaciones N a M)

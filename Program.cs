@@ -31,6 +31,7 @@ builder.Services.AddScoped<IInscripcionesRepository, InscripcionesRepository>();
 builder.Services.AddScoped<ICarreraRepository, CarreraRepository>();
 builder.Services.AddScoped<ISemestreRepository, SemestreRepository>();
 builder.Services.AddScoped<IEstudianteRepository, EstudianteRepository>();
+builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
 builder.Services.AddScoped<IFacultadRepository, FacultadRepository>();
 builder.Services.AddScoped<IPlanificacionRepository, PlanificacionRepository>();
 builder.Services.AddScoped<IProgramaRepository, ProgramaRepository>();
@@ -48,6 +49,7 @@ builder.Services.AddScoped<InscripcionesService>(); // Corregido a Singular
 builder.Services.AddScoped<CarreraService>();
 builder.Services.AddScoped<SemestreService>();
 builder.Services.AddScoped<EstudianteService>();
+builder.Services.AddScoped<UsuarioService>();
 builder.Services.AddScoped<PlanificacionService>();
 builder.Services.AddScoped<ProgramaService>();
 builder.Services.AddScoped<MateriaCarreraService>();
