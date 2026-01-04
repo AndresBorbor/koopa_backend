@@ -29,12 +29,10 @@ builder.Services.AddDbContext<KoopaDbContext>(options =>
 builder.Services.AddScoped<IMateriaRepository, MateriaRepository>();
 builder.Services.AddScoped<IInscripcionesRepository, InscripcionesRepository>(); // Corregido a Singular según la entidad
 builder.Services.AddScoped<ICarreraRepository, CarreraRepository>();
-builder.Services.AddScoped<ISemestreRepository, SemestreRepository>();
 builder.Services.AddScoped<IEstudianteRepository, EstudianteRepository>();
 builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
 builder.Services.AddScoped<IFacultadRepository, FacultadRepository>();
 builder.Services.AddScoped<IPlanificacionRepository, PlanificacionRepository>();
-builder.Services.AddScoped<IProgramaRepository, ProgramaRepository>();
 builder.Services.AddScoped<IFiltroRepository, FiltroRepository>();
 
 // Repositorios de Tablas Puente y Catálogos
@@ -47,17 +45,14 @@ builder.Services.AddScoped<ITipoRequisitoRepository, TipoRequisitoRepository>();
 builder.Services.AddScoped<MateriaService>();
 builder.Services.AddScoped<InscripcionesService>(); // Corregido a Singular
 builder.Services.AddScoped<CarreraService>();
-builder.Services.AddScoped<SemestreService>();
 builder.Services.AddScoped<EstudianteService>();
 builder.Services.AddScoped<UsuarioService>();
 builder.Services.AddScoped<PlanificacionService>();
-builder.Services.AddScoped<ProgramaService>();
 builder.Services.AddScoped<MateriaCarreraService>();
 builder.Services.AddScoped<RequisitoService>();
 builder.Services.AddScoped<TipoCreditoService>();
 builder.Services.AddScoped<TipoRequisitoService>();
 builder.Services.AddScoped<FiltroService>();
-
 
 
 // Program.cs

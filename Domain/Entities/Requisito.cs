@@ -6,13 +6,13 @@ namespace KoopaBackend.Domain.Entities
     [Table("REQUISITOS", Schema = "dbo")]
     public class Requisito
     {
-        [Column("cod_materia")]
+        [Column("COD_MATERIA")]
         public int CodMateria { get; set; }
 
-        [Column("cod_materia_requisito")]
+        [Column("COD_MATERIA_REQUISITO")]
         public int CodMateriaRequisito { get; set; }
 
-        [Column("cod_tipo_requisito")]
+        [Column("COD_TIPO_REQUISITO")]
         [MaxLength(10)]
         public string CodTipoRequisito { get; set; }
     }

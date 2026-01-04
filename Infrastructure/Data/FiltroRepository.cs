@@ -29,16 +29,16 @@ namespace KoopaBackend.Infrastructure.Repositories
             carreras.Insert(0, new FiltroDto { Id = "all", Value = "Todos" });
 
             // 2. Await (espera) para obtener la lista de Semestres
-            var semestres = await _context.Semestres
+            var periodos = await _context.Periodos
                 .AsNoTracking()
-                .Select(s => new FiltroDto { Id = s.CodSemestre.ToString(), Value  = s.Nombre})
+                .Select(s => new FiltroDto { Id = s.Anio.ToString() + s.Termino.ToString(), Value  = s.NombrePeriodo})
                 .ToListAsync(); // El ToListAsync() ahora se ejecuta sobre la proyección de LINQ
-            semestres.Insert(0, new FiltroDto { Id = "Todos", Value = "all" });
+            periodos.Insert(0, new FiltroDto { Id = "Todos", Value = "all" });
             // Mapear a Diccionario
             var resultado = new Dictionary<string, IEnumerable<FiltroDto>>
             {
                 { "carreras", carreras },
-                { "semestres", semestres }
+                { "periodos", periodos }
             };
 
             return resultado;

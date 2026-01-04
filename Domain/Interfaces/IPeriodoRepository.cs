@@ -4,9 +4,9 @@ using KoopaBackend.Domain.Entities;
 
 namespace KoopaBackend.Domain.Interfaces
 {
-    public interface ISemestreRepository
+    public interface IPeriodoRepository
     {
-        Task<IEnumerable<Semestre>> GetAllAsync();
 
+        Task<IEnumerable<Periodo>> GetAllAsync();
     }
 }
