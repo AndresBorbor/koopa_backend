@@ -11,14 +11,18 @@ namespace KoopaBackend.Domain.Interfaces
     }
     public class MateriaPobladaDto
     {
+        public int CodMateria { get; set; }
         public string NombreMateria { get; set; }
         public int CantidadInscritos { get; set; }
     }
 
     public class DashboardDto
     {
-        [JsonPropertyName("cant_estudiantes")]
-        public int CantEstudiantes { get; set; }
+        [JsonPropertyName("cantidad_estudiantes")]
+        public int CantidadEstudiantes { get; set; }
+
+        [JsonPropertyName("cantidad_inscripciones")]
+        public int CantidadInscripciones { get; set; }
 
         [JsonPropertyName("tasa_reprobacion")]
         public double TasaReprobacion { get; set; }
@@ -51,6 +55,9 @@ namespace KoopaBackend.Domain.Interfaces
 
     public class RendimientoCarreraDto
     {
+        [JsonPropertyName("cod_carrera")]
+        public int CodCarrera { get; set; }
+        
         [JsonPropertyName("nombre_carrera")]
         public string NombreCarrera { get; set; } = string.Empty;
 
@@ -72,6 +79,9 @@ namespace KoopaBackend.Domain.Interfaces
 
     public class MateriaReprobacionDto
     {
+        [JsonPropertyName("cod_materia")]
+        public int CodMateria { get; set; }
+        
         [JsonPropertyName("nombre_materia")]
         public string NombreMateria { get; set; } = string.Empty;
 

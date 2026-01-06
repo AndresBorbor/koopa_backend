@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using KoopaBackend.Domain.Interfaces;
 using KoopaBackend.Infrastructure.Data;
-using KoopaBackend.Domain.Entities; // Asegúrate de tener este using para la entidad Semestre
+using KoopaBackend.Domain.Entities;
 
 namespace KoopaBackend.Infrastructure.Repositories
 {
@@ -18,102 +18,179 @@ namespace KoopaBackend.Infrastructure.Repositories
             _context = context;
         }
 
-        // 1. Actualizamos la firma para aceptar nulos en anio y termino
         public async Task<DashboardDto> ObtenerMetricasAsync(
-    int? codCarrera,
-    int? anio,
-    string? termino)
+            int? codCarrera,
+            int? anio,
+            string? termino)
         {
-            var query = _context.VwMetricasMateriaPeriodos.AsNoTracking();
-            
+            int totalEstudiantes = 0;
+            int totalReprobados = 0;
+            int totalInscripciones = 0;
+            List<RendimientoCarreraDto>? rendimientoCarrera = null;
 
-            if (anio.HasValue)
-                query = query.Where(x => x.Anio == anio.Value);
-
-            if (!string.IsNullOrEmpty(termino))
-                query = query.Where(x => x.Termino == termino);
-
-            if (codCarrera.HasValue)
-                query = query.Where(x => x.CodCarrera == codCarrera.Value);
-            
-            var dashboard = new DashboardDto();
-
-            
-            dashboard.CantEstudiantes = await query.SumAsync(x => x.Inscritos);
-            dashboard.TotalReprobados = await query.SumAsync(x => x.Reprobados);
-            dashboard.TasaReprobacion = dashboard.CantEstudiantes > 0
-                ? Math.Round(dashboard.TotalReprobados * 100.0 / dashboard.CantEstudiantes, 2)
-                : 0;
-            dashboard.PromedioCarrera = await query.AverageAsync(x => (double?)x.PromedioMateria) ?? 0;
-            // 2️⃣ Rendimiento por carrera (solo si no filtramos por carrera)
-
-
-            if (!codCarrera.HasValue)
+            // ============================
+            // LOGICA DUPLICADA (ANTES queryGeneral)
+            // ============================
+            if (termino != null)
             {
-                dashboard.RendimientoCarrera = await query
-                    .GroupBy(x => x.NombreCarrera)
-                    .Select(g => new RendimientoCarreraDto
-                    {
-                        NombreCarrera = g.Key,
-                        Aprobados = g.Sum(x => x.Aprobados),
-                        Reprobados = g.Sum(x => x.Reprobados)
-                    })
-                    .ToListAsync();
+                var queryGeneral = _context.VwMetricasCarreraPeriodos.AsNoTracking();
+
+                if (anio.HasValue)
+                    queryGeneral = queryGeneral.Where(x => x.Anio == anio.Value);
+
+                if (codCarrera.HasValue)
+                    queryGeneral = queryGeneral.Where(x => x.CodCarrera == codCarrera.Value);
+
+                if (!string.IsNullOrEmpty(termino))
+                    queryGeneral = queryGeneral.Where(x => x.Termino.ToLower() == termino.ToLower());
+
+                totalEstudiantes = await queryGeneral.SumAsync(x => x.CantidadEstudiantes);
+                totalReprobados = await queryGeneral.SumAsync(x => x.CantidadReprobados);
+                totalInscripciones = await queryGeneral.SumAsync(x => x.CantidadInscripciones);
+
+
+                if (!codCarrera.HasValue)
+                {
+                    rendimientoCarrera = await queryGeneral
+                        .GroupBy(x => new { x.CodCarrera, x.NombreCarrera })
+                        .Select(g => new RendimientoCarreraDto
+                        {
+                            CodCarrera = g.Key.CodCarrera,
+                            NombreCarrera = g.Key.NombreCarrera,
+                            Aprobados = g.Sum(x => x.CantidadAprobados),
+                            Reprobados = g.Sum(x => x.CantidadReprobados)
+                        })
+                        .ToListAsync();
+                }
+            }
+            else
+            {
+                var queryGeneral = _context.VwMetricasCarreraAnios.AsNoTracking();
+
+                if (anio.HasValue)
+                    queryGeneral = queryGeneral.Where(x => x.Anio == anio.Value);
+
+                if (codCarrera.HasValue)
+                    queryGeneral = queryGeneral.Where(x => x.CodCarrera == codCarrera.Value);
+
+                totalEstudiantes = await queryGeneral.SumAsync(x => x.CantidadEstudiantes);
+                totalReprobados = await queryGeneral.SumAsync(x => x.CantidadReprobados);
+                totalInscripciones = await queryGeneral.SumAsync(x => x.CantidadInscripciones);
+
+                if (!codCarrera.HasValue)
+                {
+                    rendimientoCarrera = await queryGeneral
+                        .GroupBy(x => new { x.CodCarrera, x.NombreCarrera })
+                        .Select(g => new RendimientoCarreraDto
+                        {
+                            CodCarrera = g.Key.CodCarrera,
+                            NombreCarrera = g.Key.NombreCarrera,
+                            Aprobados = g.Sum(x => x.CantidadAprobados),
+                            Reprobados = g.Sum(x => x.CantidadReprobados)
+                        })
+                        .ToListAsync();
+                }
             }
 
-            // 3️⃣ Materias con mayor reprobación (TOP 5)
-            dashboard.MateriasMayorReprobacion = await query
-                .GroupBy(x => x.NombreMateria)
+            // ============================
+            // LOGICA COMUN (SIN DUPLICAR)
+            // ============================
+
+            var tasaReprobacion = 0.0;
+            if (totalInscripciones > 0)
+            {
+                tasaReprobacion = Math.Round(
+                    (double)totalReprobados * 100.0 / totalInscripciones, 2);
+            }
+
+            // Graduados
+            var queryGraduados = _context.Graduados.AsQueryable();
+
+            if (anio.HasValue)
+                queryGraduados = queryGraduados.Where(g => g.Anio == anio.Value);
+
+            if (codCarrera.HasValue)
+                queryGraduados = queryGraduados.Where(g => g.CodCarrera == codCarrera.Value);
+
+            var totalGraduados = await queryGraduados
+                .SumAsync(g => g.CantidadGraduados);
+
+            // Promedio carrera
+            var queryMateria = _context.VwMetricasMaterias.AsNoTracking();
+
+            if (anio.HasValue)
+                queryMateria = queryMateria.Where(x => x.Anio == anio.Value);
+
+            if (codCarrera.HasValue)
+                queryMateria = queryMateria.Where(x => x.CodCarrera == codCarrera.Value);
+
+            if (!string.IsNullOrEmpty(termino))
+                    queryMateria = queryMateria.Where(x => x.Termino.ToLower() == termino.ToLower());
+
+            var promedioCarreraFacultad =
+                await queryMateria.AverageAsync(x => (double?)x.PromedioMateria) ?? 0;
+
+            // Evolución de ingresos
+            var periodos = await _context.VwMetricasCarreraPeriodos
+                .Where(i => !codCarrera.HasValue || i.CodCarrera == codCarrera.Value)
+                .OrderBy(i => i.Anio)
+                .ThenBy(i => i.Termino)
+                .Select(i => i.NombrePeriodo)
+                .ToListAsync();
+
+            var cantidadIngresos = await _context.VwMetricasCarreraPeriodos
+                .Where(i => !codCarrera.HasValue || i.CodCarrera == codCarrera.Value)
+                .OrderBy(i => i.Anio)
+                .ThenBy(i => i.Termino)
+                .Select(i => i.TotalIngresoAdm + i.TotalIngresoCambio)
+                .ToListAsync();
+
+            var evolucionIngresosDto = new EvolucionIngresosDto
+            {
+                Periodos = periodos,
+                CantidadIngresos = cantidadIngresos
+            };
+
+            // Materias con mayor reprobación
+            var materiasMayorReprobacion = await queryMateria
+                .GroupBy(x => new { x.CodMateria, x.NombreMateria })
                 .Select(g => new MateriaReprobacionDto
                 {
-                    NombreMateria = g.Key,
-                    Reprobados = g.Sum(x => x.Reprobados)
+                    CodMateria = g.Key.CodMateria,
+                    NombreMateria = g.Key.NombreMateria,
+                    Reprobados = g.Sum(x => x.CantidadReprobados)
                 })
                 .OrderByDescending(x => x.Reprobados)
                 .Take(5)
                 .ToListAsync();
 
-            // 4️⃣ Materias más pobladas (TOP 5)
-            dashboard.MateriasMasPobladas = await query
-                .GroupBy(x => x.NombreMateria)
+            // Materias más pobladas
+            var materiasMasPobladas = await queryMateria
+                .GroupBy(x => new { x.CodMateria, x.NombreMateria })
                 .Select(g => new MateriaPobladaDto
                 {
-                    NombreMateria = g.Key,
-                    CantidadInscritos = g.Sum(x => x.Inscritos)
+                    CodMateria = g.Key.CodMateria,
+                    NombreMateria = g.Key.NombreMateria,
+                    CantidadInscritos = g.Sum(x => x.CantidadInscripciones)
                 })
                 .OrderByDescending(x => x.CantidadInscritos)
                 .Take(5)
                 .ToListAsync();
-           
-            // 5️⃣ Evolución de ingresos
-            dashboard.EvolucionIngresos = new EvolucionIngresosDto
+
+            // Dashboard
+            var dashboard = new DashboardDto
             {
-                Periodos = await _context.Ingresos
-                    .Where(i => !codCarrera.HasValue || i.CodCarrera == codCarrera.Value)
-                    .OrderBy(i => i.Anio).ThenBy(i => i.Termino)
-                    .Select(i => i.Anio.ToString() +i.Termino.ToString())
-                    .ToListAsync(),
-
-                CantidadIngresos = await _context.Ingresos
-                    .Where(i => !codCarrera.HasValue || i.CodCarrera == codCarrera.Value)
-                    .OrderBy(i => i.Anio).ThenBy(i => i.Termino)
-                    .Select(i =>  i.TotalIngresoAdm + i.TotalIngresoCambio)    
-                    .ToListAsync()
+                CantidadEstudiantes = totalEstudiantes,
+                CantidadInscripciones = totalInscripciones,
+                TasaReprobacion = tasaReprobacion,
+                TotalReprobados = totalReprobados,
+                TotalGraduados = totalGraduados,
+                PromedioCarrera = Math.Round(promedioCarreraFacultad, 2),
+                RendimientoCarrera = rendimientoCarrera,
+                EvolucionIngresos = evolucionIngresosDto,
+                MateriasMayorReprobacion = materiasMayorReprobacion,
+                MateriasMasPobladas = materiasMasPobladas
             };
-
-            // 6️⃣ Graduados
-            var graduadosQuery = _context.Graduados.AsQueryable();
-            if (anio.HasValue)
-                graduadosQuery = graduadosQuery.Where(g => g.Anio == anio.Value);
-            if (codCarrera.HasValue)
-                graduadosQuery = graduadosQuery.Where(g => g.CodCarrera == codCarrera.Value);
-
-            dashboard.TotalGraduados = await graduadosQuery.SumAsync(g => g.CantidadGraduados);
-
-            // Tasa de graduados sobre inscritos
-            dashboard.TasaGraduados = dashboard.CantEstudiantes > 0
-                ? Math.Round(dashboard.TotalGraduados * 100.0 / dashboard.CantEstudiantes, 2)
-                : 0;
 
             return dashboard;
         }

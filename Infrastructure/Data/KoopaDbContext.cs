@@ -34,7 +34,9 @@ namespace KoopaBackend.Infrastructure.Data
         public DbSet<Inscripciones> Inscripciones { get; set; } // Tu clase se llama 'Inscripciones'
 
         public DbSet<MallaStatsView> MallaStatsViews { get; set; }
-        public DbSet<VwMetricasMateriaPeriodo> VwMetricasMateriaPeriodos{ get; set; }
+        public DbSet<VW_MetricasCarreraAnio> VwMetricasCarreraAnios{ get; set; }
+        public DbSet<VW_MetricasCarreraPeriodo> VwMetricasCarreraPeriodos{ get; set; }
+        public DbSet<VW_MetricasMateria> VwMetricasMaterias{ get; set; }
 
         // 👇 ESTE ES EL BLOQUE QUE TE FALTA O ESTÁ INCOMPLETO
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -52,53 +54,75 @@ namespace KoopaBackend.Infrastructure.Data
                 .HasKey(r => new { r.CodMateria, r.CodMateriaRequisito, r.CodTipoRequisito });
 
             // Mapear vista como Keyless
-            modelBuilder.Entity<VwMetricasMateriaPeriodo>()
-                .HasNoKey()
-                .ToView("VW_METRICAS_MATERIA_PERIODO", "dbo");
-
-            modelBuilder.Entity<MallaStatsView>()
-                .HasNoKey()
-                .ToView("VW_MATERIAS_MALLA", "dbo");
-
             modelBuilder.Entity<Planificacion>()
                 .HasNoKey();
 
-            modelBuilder.Entity<VwMetricasMateriaPeriodo>(entity =>
+            modelBuilder.Entity<VW_MetricasCarreraAnio>(entity =>
             {
-                entity.ToView("VW_METRICAS_MATERIA_PERIODO", "dbo");
+                entity.ToView("VW_METRICAS_CARRERA_ANIO", "dbo");
                 entity.HasNoKey();
 
+                
+                entity.Property(e => e.Anio).HasColumnName("ANIO");
+                entity.Property(e => e.CodCarrera).HasColumnName("COD_CARRERA");
+                entity.Property(e => e.NombreCarrera).HasColumnName("NOMBRE_CARRERA");
+                entity.Property(e => e.CantidadEstudiantes).HasColumnName("CANTIDAD_ESTUDIANTES");
+                entity.Property(e => e.CantidadInscripciones).HasColumnName("CANTIDAD_INSCRIPCIONES");
+                entity.Property(e => e.CantidadReprobados).HasColumnName("CANTIDAD_REPROBADOS");
+                entity.Property(e => e.CantidadAprobados).HasColumnName("CANTIDAD_APROBADOS");
+                entity.Property(e => e.CantidadGraduados).HasColumnName("CANTIDAD_GRADUADOS");
+                entity.Property(e => e.TotalIngresoAdm).HasColumnName("TOTAL_INGRESO_ADM");
+                entity.Property(e => e.TotalIngresoCambio).HasColumnName("TOTAL_INGRESO_CAMBIO");
+                
+            });
+            
+            
+            modelBuilder.Entity<VW_MetricasCarreraPeriodo>(entity =>
+            {
+                entity.ToView("VW_METRICAS_CARRERA_PERIODO", "dbo");
+                entity.HasNoKey();
+
+                
+                entity.Property(e => e.NombrePeriodo).HasColumnName("NOMBRE_PERIODO");
+                entity.Property(e => e.Anio).HasColumnName("ANIO");
+                entity.Property(e => e.Termino).HasColumnName("TERMINO");
+                entity.Property(e => e.CodCarrera).HasColumnName("COD_CARRERA");
+                entity.Property(e => e.NombreCarrera).HasColumnName("NOMBRE_CARRERA");
+                entity.Property(e => e.CantidadEstudiantes).HasColumnName("CANTIDAD_ESTUDIANTES");
+                entity.Property(e => e.CantidadAprobados).HasColumnName("CANTIDAD_APROBADOS");
+                entity.Property(e => e.CantidadReprobados).HasColumnName("CANTIDAD_REPROBADOS");
+                entity.Property(e => e.CantidadInscripciones).HasColumnName("CANTIDAD_INSCRIPCIONES");
+                entity.Property(e => e.TotalIngresoAdm).HasColumnName("TOTAL_INGRESO_ADM");
+                entity.Property(e => e.TotalIngresoCambio).HasColumnName("TOTAL_INGRESO_CAMBIO");
+
+            });
+
+            modelBuilder.Entity<VW_MetricasMateria>(entity =>
+            {
+                entity.ToView("VW_METRICAS_MATERIA", "dbo");
+                entity.HasNoKey();
+
+                
+                entity.Property(e => e.NombrePeriodo).HasColumnName("NOMBRE_PERIODO");
                 entity.Property(e => e.Anio).HasColumnName("ANIO");
                 entity.Property(e => e.Termino).HasColumnName("TERMINO");
                 entity.Property(e => e.CodCarrera).HasColumnName("COD_CARRERA");
                 entity.Property(e => e.NombreCarrera).HasColumnName("NOMBRE_CARRERA");
                 entity.Property(e => e.CodMateria).HasColumnName("COD_MATERIA");
                 entity.Property(e => e.NombreMateria).HasColumnName("NOMBRE_MATERIA");
-                entity.Property(e => e.Inscritos).HasColumnName("INSCRITOS");
-                entity.Property(e => e.Reprobados).HasColumnName("REPROBADOS");
-                entity.Property(e => e.Aprobados).HasColumnName("APROBADOS");
-                entity.Property(e => e.PromedioMateria).HasColumnName("PROMEDIO_MATERIA");   
+                entity.Property(e => e.CantidadEstudiantes).HasColumnName("CANTIDAD_ESTUDIANTES");
+                entity.Property(e => e.CantidadInscripciones).HasColumnName("CANTIDAD_INSCRIPCIONES");
+                entity.Property(e => e.CantidadAprobados).HasColumnName("CANTIDAD_APROBADOS");
+                entity.Property(e => e.CantidadReprobados).HasColumnName("CANTIDAD_REPROBADOS");
+                entity.Property(e => e.NivelCarrera).HasColumnName("NIVEL_CARRERA");
+                entity.Property(e => e.PromedioMateria).HasColumnName("PROMEDIO_MATERIA");
+                entity.Property(e => e.CodTipoCredito).HasColumnName("COD_TIPO_CREDITO");
 
             });
-            
-            // modelBuilder.Entity<MallaStatsView>(entity =>
-            //     {
-            //         entity.ToView("VW_MATERIAS_MALLA", "dbo");
-            //         entity.HasNoKey();
 
-            //         entity.Property(e => e.CodCarrera).HasColumnName("COD_CARRERA");
-            //         entity.Property(e => e.CodMateria).HasColumnName("COD_MATERIA");
-            //         entity.Property(e => e.NombreMateria).HasColumnName("NOMBRE_MATERIA");
-            //         entity.Property(e => e.NivelCarrera).HasColumnName("NIVEL_CARRERA");
-            //         entity.Property(e => e.CodSemestre).HasColumnName("COD_SEMESTRE");
-            //         entity.Property(e => e.NombreSemestre).HasColumnName("NOMBRE_SEMESTRE");
-            //         entity.Property(e => e.InscritosActuales).HasColumnName("INSCRITOS_ACTUALES");
-            //         entity.Property(e => e.ReprobadosSemestreAnterior).HasColumnName("REPROBADOS_SEMESTRE_ANTERIOR");
-            //         entity.Property(e => e.HabilitadosParaTomarla).HasColumnName("HABILITADOS_PARA_TOMARLA");
-            //     });
-
-            
-
+            modelBuilder.Entity<MallaStatsView>()
+                .HasNoKey()
+                .ToView("MallaStatsView");
         }
 
 
