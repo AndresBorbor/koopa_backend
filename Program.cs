@@ -89,11 +89,14 @@ var app = builder.Build();
 // }
 app.UseCors("AllowFrontend");
 
-if (app.Environment.IsDevelopment())
+
+app.UseSwagger();
+
+app.UseSwaggerUI(c =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Koopa API V1");
+    c.RoutePrefix = String.Empty; // Agregado: ahora se accede en /swagger-api
+});
 
 app.UseHttpsRedirection();
 

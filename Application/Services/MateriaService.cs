@@ -14,10 +14,10 @@ public class MateriaService
         _repository = repository;
     }
 
-    public async Task<IEnumerable<MateriaMallaDto>> ObtenerDatosMallaAsync(int codCarrera, string? codSemestre)
+    public async Task<IEnumerable<MateriaMallaDto>> ObtenerDatosMallaAsync(int codCarrera,int? anio, string? termino)
     {
         // 1. Llamamos al repositorio
-        var datos = await _repository.ObtenerDatosMallaAsync(codCarrera, codSemestre);
+        var datos = await _repository.ObtenerDatosMallaAsync(codCarrera, anio, termino);
 
         // (Opcional) Aquí podrías poner lógica extra si fuera necesaria.
         // Por ejemplo: Validar que la lista no venga vacía, o filtrar algo más.

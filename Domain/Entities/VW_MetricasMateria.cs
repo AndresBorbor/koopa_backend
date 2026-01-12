@@ -17,9 +17,9 @@ namespace KoopaBackend.Domain.Entities
         public int CantidadInscripciones { get; set; }
         public int CantidadAprobados { get; set; }
         public int CantidadReprobados { get; set; }
+        public decimal? PromedioMateria { get; set; }
         public string NivelCarrera { get; set; }
         public int CodTipoCredito { get; set; }
-        public float PromedioMateria { get; set; }
     }
     
 }

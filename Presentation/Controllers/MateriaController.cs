@@ -17,7 +17,7 @@ public class MateriaController : ControllerBase
     // GET: api/materias/malla-stats/5
     // Ahora requerimos el ID de la carrera en la URL
     [HttpGet("malla-stats")]
-    public async Task<IActionResult> GetMateriaMallaStats([FromQuery] int codCarrera, [FromQuery] string? codSemestre)
+    public async Task<IActionResult> GetMateriaMallaStats([FromQuery] int codCarrera, [FromQuery] int? anio, [FromQuery] string? termino)
     {
         // Validación básica
         if (codCarrera <= 0)
@@ -28,12 +28,13 @@ public class MateriaController : ControllerBase
         try 
         {
             // Pasamos el ID al servicio
-            var datos = await _service.ObtenerDatosMallaAsync(codCarrera, codSemestre);
+            var datos = await _service.ObtenerDatosMallaAsync(codCarrera, anio, termino);
+            
             if (datos == null || !datos.Any())
             {
                 // Un 204 No Content es a veces mejor que 404 si la carrera existe pero no tiene malla cargada,
                 // pero un 404 con mensaje está bien para este caso.
-                return NotFound($"No se encontraron datos de malla para la carrera con ID {codCarrera}.");
+                return NotFound($"No se encontraron datos de malla para la carrera con ID {codCarrera}, año {anio}, término {termino}.");
             }
 
             return Ok(datos);

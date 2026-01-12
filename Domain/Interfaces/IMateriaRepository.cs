@@ -11,6 +11,6 @@ namespace KoopaBackend.Domain.Interfaces
         Task<IEnumerable<Materia>> GetAllAsync();
         
         // ⭐ EL MÉTODO IMPORTANTE PARA EL DASHBOARD
-        Task<IEnumerable<MateriaMallaDto>> ObtenerDatosMallaAsync(int codCarrera, string? codSemestre);
+        Task<IEnumerable<MateriaMallaDto>> ObtenerDatosMallaAsync(int codCarrera,int? anio, string? termino);
     }
 }

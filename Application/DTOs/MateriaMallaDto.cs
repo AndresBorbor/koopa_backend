@@ -12,6 +12,7 @@ namespace KoopaBackend.Application.DTOs
         
         // 👇 ESTE ES EL CAMPO QUE DABA ERROR CS0117
         public int CantidadEstudiantes { get; set; } 
+        public int CantidadInscripciones { get; set; } 
         
         public string Estado { get; set; }
 
@@ -21,7 +22,7 @@ namespace KoopaBackend.Application.DTOs
         // 👇 ESTOS DABAN ERROR CS0117
         public List<string> PreRequisitos { get; set; } = new List<string>();
         public List<string> CoRequisitos { get; set; } = new List<string>();
-
+        public decimal? PromedioMateria { get; set; }
         public List<RendimientoMallaDto> Rendimiento { get; set; } = new List<RendimientoMallaDto>();
     }
 
@@ -29,7 +30,7 @@ namespace KoopaBackend.Application.DTOs
     {
         public int Inscritos { get; set; }
         public int Reprobados { get; set; }
-        public double ReprobadosPorcentaje { get; set; }
+        public double? ReprobadosPorcentaje { get; set; }
         public int Habilitados { get; set; }
         public string Descripcion { get; set; }
         public string NotaPie { get; set; }

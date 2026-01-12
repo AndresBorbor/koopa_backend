@@ -15,7 +15,7 @@ namespace KoopaBackend.Domain.Entities
         public int Inscritos { get; set; }
         public int Reprobados { get; set; }
         public int Aprobados { get; set; }
-        public decimal PromedioMateria { get; set; }
+        public decimal? PromedioMateria { get; set; }
     }
     
 }
