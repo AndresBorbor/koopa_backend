@@ -31,18 +31,30 @@ namespace KoopaBackend.Infrastructure.Repositories
 
             
             // 2. Await (espera) para obtener la lista de Semestres
-            var periodos = await _context.Periodos
+            var anios = await _context.Periodos
                 .AsNoTracking()
-                .Select(s => new FiltroDto { Id = $"{s.Anio.ToString()}-{s.Termino.ToString()}", Value  = s.NombrePeriodo})
+                .Select(s => new FiltroDto { Id = $"{s.Anio.ToString()}", Value  = s.Anio.ToString() })
+                .Distinct()
+                .OrderBy(a => a.Value)
                 .ToListAsync(); // El ToListAsync() ahora se ejecuta sobre la proyección de LINQ
-            periodos.Insert(0, new FiltroDto { Id = "all", Value = "Todos" });
+            anios.Insert(0, new FiltroDto { Id = "all", Value = "Todos" });
+
+            // 2. Await (espera) para obtener la lista de Semestres
+            var terminos = await _context.Periodos
+                .AsNoTracking()
+                .Select(s => new FiltroDto { Id = $"{s.Termino.ToString()}", Value  = s.Termino.ToString() })
+                .Distinct()
+                .OrderBy(t => t.Value)
+                .ToListAsync(); // El ToListAsync() ahora se ejecuta sobre la proyección de LINQ
+            terminos.Insert(0, new FiltroDto { Id = "all", Value = "Todos" });
             
             
             // Mapear a Diccionario
             var resultado = new Dictionary<string, IEnumerable<FiltroDto>>
             {
                 { "carreras", carreras },
-                { "periodos", periodos }
+                { "anios", anios },
+                { "terminos", terminos }
             };
 
             return resultado;
