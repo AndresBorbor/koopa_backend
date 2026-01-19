@@ -109,15 +109,11 @@ namespace KoopaBackend.Infrastructure.Repositories
                                         ? 0
                                         : (double)(s.Sum(x => x.CantidadReprobados ?? 0)) / s.Sum(x => x.CantidadInscripciones ?? 0),
                                     Habilitados = 0,
-                                    Descripcion = "Descripción agregada",
+                                    Descripcion = s.Key,
                                     NotaPie = "Nota al pie agregada"
                                 });
 
                 var cantidadInscripciones = g.Sum(x => x.CantidadInscripciones ?? 0);
-                Console.WriteLine("==================================");
-                Console.WriteLine($"Materia {materia.CodMateria} - Cantidad Inscripciones: {g.First().CantidadInscripciones.ToString()}");
-                Console.WriteLine($"Materia {materia.CodMateria} - Cantidad Inscripciones: {g.Sum(x => x.CantidadInscripciones ?? 0)}");
-                Console.WriteLine("==================================");
 
                 return new MateriaMallaDto
                 {
