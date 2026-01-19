@@ -6,31 +6,33 @@ namespace KoopaBackend.Domain.Entities
     [Table("PLANIFICACION", Schema = "dbo")]
     public class Planificacion
     {
-        [Key]
-        [Column("cod_planificacion")]
-        public int CodPlanificacion { get; set; }
+        [Column("COD_CURSO")]
+        public int CodCurso { get; set; }
 
-        [Column("cod_curso")]
-        public int? CodCurso { get; set; }
+        [Column("ANIO")]
+        public int Anio { get; set; }
 
-        [Column("cod_materia")]
-        public int? CodMateria { get; set; }
+        [Column("TERMINO")]
+        public int Termino { get; set; }
 
-        [Column("cod_semestre")]
-        public int? CodSemestre { get; set; }
+        [Column("COD_MATERIA")]
+        public int CodMateria { get; set; }
 
-        [Column("cod_paralelo")]
-        public int? CodParalelo { get; set; }
+        [Column("COD_PARALELO")]
+        public int CodParalelo { get; set; }
 
-        [Column("cupo_planificado")]
-        public int? CupoPlanificado { get; set; }
+        [Column("CUPO_PLANIFICADO")]
+        public int CupoPlanificado { get; set; }
 
-        [Column("paralelo_cancelado")]
+        [Column("PARALELO_CANCELADO")]
         [MaxLength(1)]
         public string ParaleloCancelado { get; set; }
 
-        [Column("aprobado")]
+        [Column("APROBADO")]
         [MaxLength(1)]
         public string Aprobado { get; set; }
+
+        [Column("INSCRITOS")]
+        public int Inscritos { get; set; }
     }
 }

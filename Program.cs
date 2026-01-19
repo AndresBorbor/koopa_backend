@@ -29,11 +29,11 @@ builder.Services.AddDbContext<KoopaDbContext>(options =>
 builder.Services.AddScoped<IMateriaRepository, MateriaRepository>();
 builder.Services.AddScoped<IInscripcionesRepository, InscripcionesRepository>(); // Corregido a Singular según la entidad
 builder.Services.AddScoped<ICarreraRepository, CarreraRepository>();
-builder.Services.AddScoped<ISemestreRepository, SemestreRepository>();
 builder.Services.AddScoped<IEstudianteRepository, EstudianteRepository>();
+builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
 builder.Services.AddScoped<IFacultadRepository, FacultadRepository>();
 builder.Services.AddScoped<IPlanificacionRepository, PlanificacionRepository>();
-builder.Services.AddScoped<IProgramaRepository, ProgramaRepository>();
+builder.Services.AddScoped<IFiltroRepository, FiltroRepository>();
 
 // Repositorios de Tablas Puente y Catálogos
 builder.Services.AddScoped<IMateriaCarreraRepository, MateriaCarreraRepository>();
@@ -45,15 +45,25 @@ builder.Services.AddScoped<ITipoRequisitoRepository, TipoRequisitoRepository>();
 builder.Services.AddScoped<MateriaService>();
 builder.Services.AddScoped<InscripcionesService>(); // Corregido a Singular
 builder.Services.AddScoped<CarreraService>();
-builder.Services.AddScoped<SemestreService>();
 builder.Services.AddScoped<EstudianteService>();
+builder.Services.AddScoped<UsuarioService>();
 builder.Services.AddScoped<PlanificacionService>();
-builder.Services.AddScoped<ProgramaService>();
 builder.Services.AddScoped<MateriaCarreraService>();
 builder.Services.AddScoped<RequisitoService>();
 builder.Services.AddScoped<TipoCreditoService>();
 builder.Services.AddScoped<TipoRequisitoService>();
+builder.Services.AddScoped<FiltroService>();
 
+
+// Program.cs
+
+// 1. Registras el Repositorio (Capa de Datos)
+builder.Services.AddScoped<IMetricasRepository, MetricasRepository>();
+
+// 2. Registras el Servicio (Capa de Lógica)
+builder.Services.AddScoped<MetricasService>();
+
+// 3. (Opcional) Los controladores ya se registran solos con AddControllers()
 
 // ==================================================================
 // 2. INYECCIÓN DE DEPENDENCIAS (Lo más importante)
@@ -79,11 +89,14 @@ var app = builder.Build();
 // }
 app.UseCors("AllowFrontend");
 
-if (app.Environment.IsDevelopment())
+
+app.UseSwagger();
+
+app.UseSwaggerUI(c =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Koopa API V1");
+    c.RoutePrefix = String.Empty; // Agregado: ahora se accede en /swagger-api
+});
 
 app.UseHttpsRedirection();
 

@@ -7,11 +7,11 @@ namespace KoopaBackend.Domain.Entities
     public class TipoCredito
     {
         [Key]
-        [Column("cod_tipo_credito")]
+        [Column("COD_TIPO_CREDITO")]
         public int CodTipoCredito { get; set; }
 
-        [Column("tipo_credito")]
+        [Column("NOMBRE_TIPO_CREDITO")]
         [MaxLength(50)]
-        public string Descripcion { get; set; }
+        public string NOMBRE_TIPO_CREDITO { get; set; }
     }
 }

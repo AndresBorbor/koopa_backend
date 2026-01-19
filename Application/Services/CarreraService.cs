@@ -11,8 +11,8 @@ public class CarreraService
         _repository = repository;
     }
 
-    public async Task<object> ListarCarrera()
+    public async Task<object> ListarCarreras()
     {
-        return await _repository.GetAllAsync();
+        return await _repository.ListarCarreras();
     }
 }

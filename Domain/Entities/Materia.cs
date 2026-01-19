@@ -7,18 +7,12 @@ namespace KoopaBackend.Domain.Entities
     public class Materia
     {
         [Key]
-        [Column("cod_materia")]
+        [Column("COD_MATERIA")]
         public int CodMateria { get; set; }
 
-        [Column("materia")]
-        [Required]
-        [MaxLength(200)]
+        [Column("NOMBRE_MATERIA")]
+        [MaxLength(100)]
         public string NombreMateria { get; set; }
-
-        [Column("cod_tipo_credito")]
-        public int? CodTipoCredito { get; set; }
-        
-        // Propiedades de navegación (Opcionales, ayudan en el Repo)
-        // public virtual ICollection<Inscripcion> Inscripciones { get; set; }
+    
     }
 }

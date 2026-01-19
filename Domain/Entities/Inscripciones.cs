@@ -7,29 +7,32 @@ namespace KoopaBackend.Domain.Entities // O KoopaBackend.Domain.Entities
     public class Inscripciones 
     {
         [Key]
-        [Column("cod_inscripcion")]
+        [Column("COD_INSCRIPCION")]
         public int CodInscripcion { get; set; }
 
-        [Column("cod_semestre")]
-        public int? CodSemestre { get; set; }
+        [Column("ANIO")]
+        public int Anio { get; set; }
 
-        [Column("cod_paralelo")]
-        public int? CodParalelo { get; set; }
+        [Column("TERMINO")]
+        public string Termino { get; set; }
 
-        [Column("cod_curso")]
-        public int? CodCurso { get; set; }
+        [Column("COD_PARALELO")]
+        public int CodParalelo { get; set; }
 
-        [Column("cod_materia")]
-        public int? CodMateria { get; set; }
+        [Column("COD_CURSO")]
+        public int CodCurso { get; set; }
 
-        [Column("cod_estudiante")]
-        public long? CodEstudiante { get; set; }
+        [Column("COD_MATERIA")]
+        public int CodMateria { get; set; }
 
-        [Column("cod_estado_curso")]
+        [Column("COD_ESTUDIANTE")]
+        public long CodEstudiante { get; set; }
+
+        [Column("COD_ESTADO_CURSO")]
         [MaxLength(5)]
         public string CodEstadoCurso { get; set; }
 
-        [Column("promedio")]
+        [Column("PROMEDIO")]
         public decimal? Promedio { get; set; }
     }
 }

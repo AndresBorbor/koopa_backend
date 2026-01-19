@@ -3,13 +3,10 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace KoopaBackend.Domain.Entities
 {
-    [Table("ESTUDIANTE", Schema = "dbo")]
-    public class Estudiante
+    [Table("INGRESOS", Schema = "dbo")]
+    public class Ingresos
     {
         [Key]
-        [Column("COD_ESTUDIANTE")]
-        public long CodEstudiante { get; set; }
-
         [Column("COD_CARRERA")]
         public int CodCarrera { get; set; }
 
@@ -17,8 +14,13 @@ namespace KoopaBackend.Domain.Entities
         public int Anio { get; set; }
 
         [Column("TERMINO")]
-        [MaxLength(100)]
         public string Termino { get; set; }
-    
+
+
+        [Column("TOTAL_INGRESO_ADM")]
+        public int TotalIngresoAdm { get; set; }
+
+        [Column("TOTAL_INGRESO_CAMBIO")]
+        public int TotalIngresoCambio { get; set; }
     }
 }

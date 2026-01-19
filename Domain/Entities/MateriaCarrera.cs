@@ -9,17 +9,17 @@ namespace KoopaBackend.Domain.Entities
         // Nota: Las claves compuestas se definen usualmente en el DbContext, 
         // pero aquí mapeamos las columnas.
         
-        [Column("cod_carrera")]
+        [Column("COD_CARRERA")]
         public int CodCarrera { get; set; }
 
-        [Column("cod_materia")]
+        [Column("COD_MATERIA")]
         public int CodMateria { get; set; }
 
-        [Column("nivel_carrera")]
-        [MaxLength(20)]
+        [Column("NIVEL_CARRERA")]
+        [MaxLength(100)]
         public string NivelCarrera { get; set; }
 
-        [Column("cod_tipo_credito")]
+        [Column("COD_TIPO_CREDITO")]
         public int? CodTipoCredito { get; set; }
     }
 }

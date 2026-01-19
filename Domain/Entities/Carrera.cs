@@ -7,11 +7,15 @@ namespace KoopaBackend.Domain.Entities
     public class Carrera
     {
         [Key]
-        [Column("cod_carrera")]
+        [Column("COD_CARRERA")]
         public int CodCarrera { get; set; }
 
-        [Column("carrera")]
+        [Column("NOMBRE_CARRERA")]
         [MaxLength(150)]
         public string NombreCarrera { get; set; }
+
+        [Column("COD_FACULTAD")]
+        [MaxLength(150)]
+        public string CodFacultad { get; set; }
     }
 }

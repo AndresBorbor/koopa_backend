@@ -7,14 +7,14 @@ namespace KoopaBackend.Domain.Entities
     public class Facultad
     {
         [Key]
-        [Column("cod_facultad")]
+        [Column("COD_FACULTAD")]
         public int CodFacultad { get; set; }
 
-        [Column("siglas")]
+        [Column("SIGLAS")]
         [MaxLength(10)]
         public string Siglas { get; set; }
 
-        [Column("facultad")]
+        [Column("NOMBRE_FACULTAD")]
         [MaxLength(100)]
         public string NombreFacultad { get; set; }
     }

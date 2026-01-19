@@ -1,33 +1,48 @@
+using KoopaBackend.Application.Services;
 using Microsoft.AspNetCore.Mvc;
-using System.Threading.Tasks;
-using KoopaBackend.Domain.Interfaces; // Para IMateriaRepository
 
-namespace KoopaBackend.API.Controllers
+namespace KoopaBackend.Presentation.Controllers;
+
+[Route("api/materias")]
+[ApiController]
+public class MateriaController : ControllerBase
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    public class MateriaController : ControllerBase
-    {
-        private readonly IMateriaRepository _materiaRepository;
+    private readonly MateriaService _service;
 
-        public MateriaController(IMateriaRepository materiaRepository)
+    public MateriaController(MateriaService service)
+    {
+        _service = service;
+    }
+
+    // GET: api/materias/malla-stats/5
+    // Ahora requerimos el ID de la carrera en la URL
+    [HttpGet("malla-stats")]
+    public async Task<IActionResult> GetMateriaMallaStats([FromQuery] int codCarrera, [FromQuery] int? anio, [FromQuery] string? termino)
+    {
+        // Validación básica
+        if (codCarrera <= 0)
         {
-            _materiaRepository = materiaRepository;
+            return BadRequest("El ID de la carrera debe ser un número positivo.");
         }
 
-        // GET: api/materia/malla-stats
-        [HttpGet("malla-stats")]
-        public async Task<IActionResult> GetMateriaMallaStats()
+        try 
         {
-            // Llamamos al repositorio que ya nos devuelve el JSON listo (DTOs)
-            var datos = await _materiaRepository.ObtenerDatosMallaAsync();
+            // Pasamos el ID al servicio
+            var datos = await _service.ObtenerDatosMallaAsync(codCarrera, anio, termino);
             
-            if (datos == null)
+            if (datos == null || !datos.Any())
             {
-                return NotFound("No se encontraron datos para la malla.");
+                // Un 204 No Content es a veces mejor que 404 si la carrera existe pero no tiene malla cargada,
+                // pero un 404 con mensaje está bien para este caso.
+                return NotFound($"No se encontraron datos de malla para la carrera con ID {codCarrera}, año {anio}, término {termino}.");
             }
 
             return Ok(datos);
+        }
+        catch (Exception ex)
+        {
+            // Manejo básico de errores por si falla la conexión a BD
+            return StatusCode(500, $"Error interno: {ex.Message}");
         }
     }
 }

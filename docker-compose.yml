@@ -1,4 +1,3 @@
-version: "3.9"
 
 services:
   db2:
@@ -43,21 +42,35 @@ services:
       - /app/obj
     command: ["dotnet", "watch", "run", "--urls", "http://+:8080"]
 
+  
   frontend:
-    build: ./koopa_frontend
+    build:
+      context: ./koopa_frontend
+      dockerfile: Dockerfile
     container_name: koopa_frontend
-    depends_on:
-      - backend
+    working_dir: /app
     ports:
       - "3000:3000"
+
+    develop:
+      watch:
+        - action: sync
+          path: ./koopa_frontend
+          target: /app
+          ignore:
+            - node_modules/
+            - .next/
+
+        # rebuild SOLO si cambian dependencias
+        - action: rebuild
+          path: ./koopa_frontend/package.json
+
     environment:
-      - WATCHPACK_POLLING=true
-    volumes:
-      - ./koopa_frontend:/app
-      - /app/node_modules
-      - /app/.next
-    working_dir: /app
-    command: ["npm", "run", "dev"]
+      NODE_ENV: development
+
+
+  
+
 
 volumes:
   db2_data:

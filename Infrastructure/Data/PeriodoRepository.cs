@@ -7,20 +7,18 @@ using KoopaBackend.Infrastructure.Data;
 
 namespace KoopaBackend.Infrastructure.Repositories
 {
-    public class SemestreRepository : ISemestreRepository
+    public class PeriodoRepository : IPeriodoRepository
     {
         private readonly KoopaDbContext _context;
 
-        public SemestreRepository(KoopaDbContext context)
+        public PeriodoRepository(KoopaDbContext context)
         {
             _context = context;
         }
 
-        public async Task<IEnumerable<Semestre>> GetAllAsync()
+        public async Task<IEnumerable<Periodo>> GetAllAsync()
         {
-            return await _context.Semestres.ToListAsync();
+            return await _context.Periodos.ToListAsync();
         }
-
-
     }
 }

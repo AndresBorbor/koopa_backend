@@ -5,10 +5,8 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using KoopaBackend.Domain.Entities;
 using KoopaBackend.Domain.Interfaces;
-using KoopaBackend.Infrastructure.Data; // Tu DbContext
-using KoopaBackend.Application.DTOs;    // Tu DTO
-
-
+using KoopaBackend.Infrastructure.Data;
+using KoopaBackend.Application.DTOs;
 
 namespace KoopaBackend.Infrastructure.Repositories
 {
@@ -23,87 +21,153 @@ namespace KoopaBackend.Infrastructure.Repositories
 
         public async Task<IEnumerable<Materia>> GetAllAsync()
         {
-            return await _context.Materias.ToListAsync();
+            return await _context.Materias.AsNoTracking().ToListAsync();
         }
 
-        public async Task<IEnumerable<MateriaMallaDto>> ObtenerDatosMallaAsync()
-        {
-            // 1. Traer datos crudos (Raw Data) haciendo JOIN en memoria o DB.
-            // Traemos todo para procesarlo en memoria (Client Evaluation) 
-            // porque la agrupación anidada compleja a veces falla en EF Core directo a SQL.
-            
-            var materias = await _context.Materias.ToListAsync();
-            var inscripciones = await _context.Inscripciones.ToListAsync();
-            var semestres = await _context.Semestres.ToListAsync();
 
-            var resultado = new List<MateriaMallaDto>();
+        public async Task<IEnumerable<MateriaMallaDto>> ObtenerDatosMallaAsync(int codCarrera, int? anio, string? termino)
+{
+    try
+    {
+        // 1. Query base
+        var queryMetricasMateria = _context.VwMetricasMaterias
+            .AsNoTracking()
+            .Where(x => x.CodCarrera == codCarrera);
 
-            foreach (var mat in materias)
+            if (anio.HasValue)
             {
-                // Filtramos inscripciones de esta materia
-                var inscripcionesDeMateria = inscripciones.Where(i => i.CodMateria == mat.CodMateria).ToList();
-
-                // Si no tiene datos, decidimos si agregarla vacía o saltarla. 
-                // La agregamos vacía para que salga en la malla.
-                
-                // A. Calcular Historial (Rendimiento)
-                var historial = inscripcionesDeMateria
-                    .GroupBy(i => i.CodSemestre)
-                    .Select(grupo => {
-                        var sem = semestres.FirstOrDefault(s => s.CodSemestre == grupo.Key);
-                        var nombrePeriodo = sem != null ? sem.Nombre : "Desconocido"; // Ej: "I PAO 2023"
-                        
-                        // Lógica de Reprobado: (Promedio < 60 o Estado 'REP')
-                        int reprobados = grupo.Count(x => (x.Promedio != null && x.Promedio < 60) || x.CodEstadoCurso == "REP");
-
-                        return new RendimientoMallaDto
-                        {
-                            Periodo = nombrePeriodo,
-                            Inscripciones = grupo.Count(),
-                            Reprobados = reprobados
-                        };
-                    })
-                    .OrderBy(h => h.Periodo) // Ordenar si es posible
-                    .ToList();
-
-                // B. Calcular Stats Generales
-                int totalInscritos = inscripcionesDeMateria.Count;
-                int totalReprobados = inscripcionesDeMateria.Count(x => (x.Promedio != null && x.Promedio < 60) || x.CodEstadoCurso == "REP");
-                double porcentaje = totalInscritos > 0 ? (double)totalReprobados / totalInscritos : 0;
-
-                // C. Determinar Color
-                // Verde (#22c55e) si reprobación < 30%, Rojo (#ef4444) si es mayor.
-                string colorHex = porcentaje > 0.30 ? "#ef4444" : "#22c55e"; 
-
-                // D. Armar el objeto final
-                var dto = new MateriaMallaDto
-                {
-                    Id = mat.CodMateria,
-                    Codigo = $"MATG-{mat.CodMateria}", // Código simulado
-                    Nombre = mat.NombreMateria,
-                    Nivel = "NIVEL GENÉRICO", // Esto vendría de MateriaCarrera si lo tuviéramos
-                    Color = colorHex,
-                    
-                    Rendimiento = historial,
-                    
-                    Stats = new StatsMallaDto
-                    {
-                        Reprobados = totalReprobados,
-                        ReprobadosPorcentaje = Math.Round(porcentaje, 2),
-                        
-                        // Estos datos son simulados porque requieren lógica de pre-requisitos compleja
-                        AprobaronRequisitos = totalInscritos - totalReprobados, 
-                        Habilitados = totalInscritos + 10, 
-                        
-                        Descripcion = $"Datos consolidados para {mat.NombreMateria}",
-                        NotaPie = "Fuente: DB2 Académico"
-                    }
-                };
-
-                resultado.Add(dto);
+                queryMetricasMateria = queryMetricasMateria
+                    .Where(x => x.Anio == anio.Value);
             }
 
-            return resultado;
-        }
+            if (!string.IsNullOrEmpty(termino))
+            {
+                queryMetricasMateria = queryMetricasMateria
+                    .Where(x => x.Termino.ToLower() == termino.ToLower());
+            }
+
+
+
+        // 2. Proyección segura a un DTO intermedio para evitar InvalidCast
+        var listaMetricas = await queryMetricasMateria
+            .Select(x => new
+            {
+                x.CodMateria,
+                NombreMateria = x.NombreMateria ?? "N/A",
+                x.CodCarrera,
+                NivelCarrera = x.NivelCarrera ?? "N/A",
+                CantidadEstudiantes = (int?)x.CantidadEstudiantes,
+                CantidadInscripciones = (int?)x.CantidadInscripciones,
+                CantidadReprobados = (int?)x.CantidadReprobados,
+                PromedioMateria = (decimal?)x.PromedioMateria, 
+                NombrePeriodo = x.NombrePeriodo ?? "N/A",   // <- Aquí está el fix
+                x.Anio,
+                x.Termino
+            })
+            .ToListAsync();
+
+
+        // if (listaMetricas == null || !listaMetricas.Any())
+        // {
+        //     Console.WriteLine("No se encontraron registros para la consulta.");
+        //     return new List<MateriaMallaDto>();
+        // }
+
+        // 3. Construir MateriaMallaDto en memoria
+        var materias = listaMetricas
+            .GroupBy(m => m.CodMateria)
+            .Select(g =>
+            {
+                var materia = g.First();
+
+                // Estado y color
+                double? reprobPorcentaje = materia.CantidadEstudiantes == 0
+                    ? 0
+                    : (double)materia.CantidadReprobados / materia.CantidadEstudiantes;
+
+                string estado = materia.CantidadEstudiantes == 0
+                    ? "Sin Inscripciones"
+                    : reprobPorcentaje >= 0.7 ? "Alto índice de Reprobación"
+                    : reprobPorcentaje >= 0.4 ? "Moderado índice de Reprobación"
+                    : "Bajo índice de Reprobación";
+
+                string color = materia.CantidadEstudiantes == 0
+                    ? "#808080"
+                    : reprobPorcentaje >= 0.7 ? "#FF0000"
+                    : reprobPorcentaje >= 0.4 ? "#FFFF00"
+                    : "#008000";
+
+                // Stats por periodo
+                var stats = g.GroupBy(x => $"{x.Anio}-{x.Termino}")
+                             .ToDictionary(
+                                s => s.Key,
+                                s => new StatsMallaDto
+                                {
+                                    Inscritos = s.Sum(x => x.CantidadInscripciones ?? 0),
+                                    Reprobados = s.Sum(x => x.CantidadReprobados ?? 0),
+                                    ReprobadosPorcentaje = s.Sum(x => x.CantidadInscripciones ?? 0) == 0
+                                        ? 0
+                                        : (double)(s.Sum(x => x.CantidadReprobados ?? 0)) / s.Sum(x => x.CantidadInscripciones ?? 0),
+                                    Habilitados = 0,
+                                    Descripcion = "Descripción agregada",
+                                    NotaPie = "Nota al pie agregada"
+                                });
+
+                var cantidadInscripciones = g.Sum(x => x.CantidadInscripciones ?? 0);
+                Console.WriteLine("==================================");
+                Console.WriteLine($"Materia {materia.CodMateria} - Cantidad Inscripciones: {g.First().CantidadInscripciones.ToString()}");
+                Console.WriteLine($"Materia {materia.CodMateria} - Cantidad Inscripciones: {g.Sum(x => x.CantidadInscripciones ?? 0)}");
+                Console.WriteLine("==================================");
+
+                return new MateriaMallaDto
+                {
+                    Id = materia.CodMateria,
+                    Codigo = materia.CodMateria.ToString(),
+                    Nombre = materia.NombreMateria,
+                    Nivel = materia.NivelCarrera,
+                    CantidadEstudiantes = cantidadInscripciones,
+                    Estado = estado,
+                    Color = color,
+                    Stats = stats,
+                    Rendimiento = g.Select(x => new RendimientoMallaDto
+                    {
+                        Periodo = $"{x.Anio}-{x.Termino}",
+                        Inscripciones = x.CantidadInscripciones ?? 0,
+                        Reprobados = x.CantidadReprobados ?? 0
+                    }).ToList(),
+                    PreRequisitos = _context.Requisitos
+                        .Where(r => r.CodMateria == materia.CodMateria && r.CodTipoRequisito == "PR")
+                        .Select(r => r.CodMateriaRequisito.ToString())
+                        .ToList(),
+                    CoRequisitos = _context.Requisitos
+                        .Where(r => r.CodMateria == materia.CodMateria && r.CodTipoRequisito == "CO")
+                        .Select(r => r.CodMateriaRequisito.ToString())
+                        .ToList()
+                };
+            })
+            .ToList();
+
+        return materias;
+    }
+    catch (Exception ex)
+    {
+        // Log detallado
+        Console.WriteLine("==================================");
+        Console.WriteLine("ERROR al ejecutar ObtenerDatosMallaAsync");
+        Console.WriteLine(ex.GetType().FullName);
+        Console.WriteLine(ex.Message);
+        Console.WriteLine(ex.StackTrace);
+        Console.WriteLine("==================================");
+
+        // Opcional: relanzar, o retornar lista vacía
+        return new List<MateriaMallaDto>();
+    }
+}
+
+
+
+
+
+
     }
 }

@@ -7,12 +7,12 @@ namespace KoopaBackend.Domain.Entities
     public class TipoRequisito
     {
         [Key]
-        [Column("cod_tipo_requisito")]
+        [Column("COD_TIPO_REQUISITO")]
         [MaxLength(10)]
         public string CodTipoRequisito { get; set; }
 
-        [Column("tipo_requisito")]
+        [Column("NOMBRE_TIPO_REQUISITO")]
         [MaxLength(50)]
-        public string Descripcion { get; set; }
+        public string NOMBRE_TIPO_REQUISITO { get; set; }
     }
 }

@@ -3,22 +3,17 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace KoopaBackend.Domain.Entities
 {
-    [Table("ESTUDIANTE", Schema = "dbo")]
-    public class Estudiante
+    [Table("GRADUADOS", Schema = "dbo")]
+    public class Graduados
     {
         [Key]
-        [Column("COD_ESTUDIANTE")]
-        public long CodEstudiante { get; set; }
-
         [Column("COD_CARRERA")]
         public int CodCarrera { get; set; }
 
         [Column("ANIO")]
         public int Anio { get; set; }
 
-        [Column("TERMINO")]
-        [MaxLength(100)]
-        public string Termino { get; set; }
-    
+        [Column("CANTIDAD_GRADUADOS")]
+        public int CantidadGraduados { get; set; }
     }
 }

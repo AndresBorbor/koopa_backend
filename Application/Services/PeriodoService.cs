@@ -2,16 +2,16 @@ using KoopaBackend.Domain.Interfaces;
 
 namespace KoopaBackend.Application.Services;
 
-public class SemestreService
+public class PeriodoService
 {
-    private readonly ISemestreRepository _repository;
+    private readonly IPeriodoRepository _repository;
 
-    public SemestreService(ISemestreRepository repository)
+    public PeriodoService(IPeriodoRepository repository)
     {
         _repository = repository;
     }
 
-    public async Task<object> ListarSemestre()
+    public async Task<object> ListarPeriodo()
     {
         return await _repository.GetAllAsync();
     }
