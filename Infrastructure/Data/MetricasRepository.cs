@@ -18,7 +18,7 @@ namespace KoopaBackend.Infrastructure.Repositories
             _context = context;
         }
 
-        public async Task<DashboardDto> ObtenerMetricasAsync(
+public async Task<DashboardDto> ObtenerMetricasAsync(
             int? codCarrera,
             int? anio,
             string? termino)
@@ -48,20 +48,17 @@ namespace KoopaBackend.Infrastructure.Repositories
                 totalReprobados = await queryGeneral.SumAsync(x => x.CantidadReprobados);
                 totalInscripciones = await queryGeneral.SumAsync(x => x.CantidadInscripciones);
 
-
-                if (!codCarrera.HasValue)
-                {
-                    rendimientoCarrera = await queryGeneral
-                        .GroupBy(x => new { x.CodCarrera, x.NombreCarrera })
-                        .Select(g => new RendimientoCarreraDto
-                        {
-                            CodCarrera = g.Key.CodCarrera,
-                            NombreCarrera = g.Key.NombreCarrera,
-                            Aprobados = g.Sum(x => x.CantidadAprobados),
-                            Reprobados = g.Sum(x => x.CantidadReprobados)
-                        })
-                        .ToListAsync();
-                }
+                rendimientoCarrera = await queryGeneral
+                    .GroupBy(x => new { x.CodCarrera, x.NombreCarrera })
+                    .Select(g => new RendimientoCarreraDto
+                    {
+                        CodCarrera = g.Key.CodCarrera,
+                        NombreCarrera = g.Key.NombreCarrera,
+                        Aprobados = g.Sum(x => x.CantidadAprobados),
+                        Reprobados = g.Sum(x => x.CantidadReprobados)
+                    })
+                    .Where(r => r.CodCarrera != 999)
+                    .ToListAsync();
             }
             else
             {
@@ -77,19 +74,18 @@ namespace KoopaBackend.Infrastructure.Repositories
                 totalReprobados = await queryGeneral.SumAsync(x => x.CantidadReprobados);
                 totalInscripciones = await queryGeneral.SumAsync(x => x.CantidadInscripciones);
 
-                if (!codCarrera.HasValue)
-                {
-                    rendimientoCarrera = await queryGeneral
-                        .GroupBy(x => new { x.CodCarrera, x.NombreCarrera })
-                        .Select(g => new RendimientoCarreraDto
-                        {
-                            CodCarrera = g.Key.CodCarrera,
-                            NombreCarrera = g.Key.NombreCarrera,
-                            Aprobados = g.Sum(x => x.CantidadAprobados),
-                            Reprobados = g.Sum(x => x.CantidadReprobados)
-                        })
-                        .ToListAsync();
-                }
+
+                rendimientoCarrera = await queryGeneral
+                    .GroupBy(x => new { x.CodCarrera, x.NombreCarrera })
+                    .Select(g => new RendimientoCarreraDto
+                    {
+                        CodCarrera = g.Key.CodCarrera,
+                        NombreCarrera = g.Key.NombreCarrera,
+                        Aprobados = g.Sum(x => x.CantidadAprobados),
+                        Reprobados = g.Sum(x => x.CantidadReprobados)
+                    })
+                    .Where(r => r.CodCarrera != 999)
+                    .ToListAsync();
             }
 
             // ============================
@@ -114,6 +110,7 @@ namespace KoopaBackend.Infrastructure.Repositories
 
             var totalGraduados = await queryGraduados
                 .SumAsync(g => g.CantidadGraduados);
+            
 
             // Promedio carrera
             var queryMateria = _context.VwMetricasMaterias.AsNoTracking();
@@ -156,9 +153,13 @@ namespace KoopaBackend.Infrastructure.Repositories
                 .GroupBy(x => new { x.CodMateria, x.NombreMateria })
                 .Select(g => new MateriaReprobacionDto
                 {
+                    // Si CodMateria es nulable, usamos ?? 0 para que encaje en el int del DTO
                     CodMateria = g.Key.CodMateria,
-                    NombreMateria = g.Key.NombreMateria,
-                    Reprobados = g.Sum(x => x.CantidadReprobados)
+                    
+                    NombreMateria = g.Key.NombreMateria ?? "Sin Nombre",
+
+                    // Sumamos y convertimos el resultado nulable a int (si es null, será 0)
+                    Reprobados = (int)(g.Sum(x => (int?)x.CantidadReprobados) ?? 0)
                 })
                 .OrderByDescending(x => x.Reprobados)
                 .Take(5)
