@@ -16,10 +16,8 @@ namespace KoopaBackend.Infrastructure.Repositories
             _context = context;
         }
 
-        // 1. Obtener todas las Requisitos
         public async Task<IEnumerable<Requisito>> GetAllAsync()
         {
-            // CORRECCIÓN: Usamos _context.Requisitos (Plural, como está en el DbContext)
             return await _context.Requisitos.ToListAsync();
         }
 

@@ -16,12 +16,9 @@ namespace KoopaBackend.Infrastructure.Repositories
             _context = context;
         }
 
-         // 1. Implementación de GetAllAsync
         public async Task<IEnumerable<TipoCredito>> GetAllAsync()
         {
-            // Retorna los datos reales de DB2
             return await _context.TiposCredito.ToListAsync();
-
         }
     }
 }

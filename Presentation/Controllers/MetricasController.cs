@@ -16,7 +16,6 @@ namespace KoopaBackend.Presentation.Controllers
             _service = service;
         }
 
-        // GET: api/metricas/dashboard?anio=2025&termino=1S&codCarrera=5
         [HttpGet("dashboard")]
         public async Task<IActionResult> GetDashboardMetrics(
             [FromQuery] int? anio, 
@@ -34,7 +33,6 @@ namespace KoopaBackend.Presentation.Controllers
             }
             catch (Exception ex)
             {
-                // En producción: _logger.LogError(ex, "Error en metricas");
                 return StatusCode(500, new { error = "Error interno: " + ex.Message });
             }
         }

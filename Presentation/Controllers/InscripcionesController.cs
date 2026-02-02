@@ -24,8 +24,6 @@ public class InscripcionesController : ControllerBase
     [HttpGet("{id}")]
     public IActionResult GetById(int id)
     {
-        // Solo para probar que el código cambió.
-        // No llama al servicio, solo devuelve algo básico.
         return Ok(new
         {
             message = "Endpoint funcionando",

@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using KoopaBackend.Domain.Entities;
 using KoopaBackend.Domain.Interfaces;
-using KoopaBackend.Infrastructure.Data; // Donde está tu KoopaDbContext
+using KoopaBackend.Infrastructure.Data; 
 
 namespace KoopaBackend.Infrastructure.Repositories
 {
@@ -25,12 +25,5 @@ namespace KoopaBackend.Infrastructure.Repositories
 
         }
 
-        // // 2. Implementación de GetByEstudianteAsync
-        // public async Task<IEnumerable<Inscripciones>> GetByEstudianteAsync(long codEstudiante)
-        // {
-        //     return await _context.Inscripciones
-        //                          .Where(x => x.CodEstudiante == codEstudiante)
-        //                          .ToListAsync();
-        // }
     }
 }

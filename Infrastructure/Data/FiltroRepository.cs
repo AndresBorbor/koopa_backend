@@ -21,35 +21,31 @@ namespace KoopaBackend.Infrastructure.Repositories
 
         public async Task<Dictionary<string,IEnumerable<FiltroDto>>> GetFiltros()
         {
-            // 1. Await (espera) para obtener la lista de Carreras
             var carreras = await _context.Carreras
                 .AsNoTracking()
                 .Select(c => new FiltroDto { Id = c.CodCarrera.ToString(), Value = c.NombreCarrera })
-                .ToListAsync(); // El ToListAsync() ahora se ejecuta sobre la proyección de LINQ
+                .ToListAsync(); 
             carreras.Insert(0, new FiltroDto { Id = "all", Value = "Todos" });
             
 
             
-            // 2. Await (espera) para obtener la lista de Semestres
             var anios = await _context.Periodos
                 .AsNoTracking()
                 .Select(s => new FiltroDto { Id = $"{s.Anio.ToString()}", Value  = s.Anio.ToString() })
                 .Distinct()
                 .OrderBy(a => a.Value)
-                .ToListAsync(); // El ToListAsync() ahora se ejecuta sobre la proyección de LINQ
+                .ToListAsync(); 
             anios.Insert(0, new FiltroDto { Id = "all", Value = "Todos" });
 
-            // 2. Await (espera) para obtener la lista de Semestres
             var terminos = await _context.Periodos
                 .AsNoTracking()
                 .Select(s => new FiltroDto { Id = $"{s.Termino.ToString()}", Value  = s.Termino.ToString() })
                 .Distinct()
                 .OrderBy(t => t.Value)
-                .ToListAsync(); // El ToListAsync() ahora se ejecuta sobre la proyección de LINQ
+                .ToListAsync(); 
             terminos.Insert(0, new FiltroDto { Id = "all", Value = "Todos" });
             
             
-            // Mapear a Diccionario
             var resultado = new Dictionary<string, IEnumerable<FiltroDto>>
             {
                 { "carreras", carreras },
