@@ -31,19 +31,10 @@ namespace KoopaBackend.Application.Services
             // ============================
             // 2. Obtener datos base
             // ============================
-            List<VW_MetricasCarreraPeriodo> metricasPeriodo = new();
-            List<VW_MetricasCarreraAnio> metricasAnio = new();
-
-            if (!string.IsNullOrEmpty(termino))
-            {
-                metricasPeriodo = await _repository
-                    .ObtenerMetricasCarreraPeriodosAsync(codCarrera, anio, termino);
-            }
-            else
-            {
-                metricasAnio = await _repository
+            List<VW_MetricasCarreraPeriodo> metricasPeriodo = await _repository
+                .ObtenerMetricasCarreraPeriodosAsync(codCarrera, anio, termino);
+            List<VW_MetricasCarreraAnio> metricasAnio =metricasAnio = await _repository
                     .ObtenerMetricasCarreraAniosAsync(codCarrera, anio);
-            }
 
             var materias = await _repository
                 .ObtenerMetricasMateriasAsync(codCarrera, anio, termino);
@@ -90,45 +81,37 @@ namespace KoopaBackend.Application.Services
             // ============================
             List<RendimientoCarreraDto>? rendimientoCarrera = null;
 
-            if (!codCarrera.HasValue)
+            if (!string.IsNullOrEmpty(termino))
             {
-                if (!string.IsNullOrEmpty(termino))
-                {
-                    rendimientoCarrera = metricasPeriodo
-                        .GroupBy(x => new { x.CodCarrera, x.NombreCarrera })
-                        .Select(g => new RendimientoCarreraDto
-                        {
-                            CodCarrera = g.Key.CodCarrera,
-                            NombreCarrera = g.Key.NombreCarrera,
-                            Aprobados = g.Sum(x => x.CantidadAprobados),
-                            Reprobados = g.Sum(x => x.CantidadReprobados)
-                        })
-                        .ToList();
-                }
-                else
-                {
-                    rendimientoCarrera = metricasAnio
-                        .GroupBy(x => new { x.CodCarrera, x.NombreCarrera })
-                        .Select(g => new RendimientoCarreraDto
-                        {
-                            CodCarrera = g.Key.CodCarrera,
-                            NombreCarrera = g.Key.NombreCarrera,
-                            Aprobados = g.Sum(x => x.CantidadAprobados),
-                            Reprobados = g.Sum(x => x.CantidadReprobados)
-                        })
-                        .ToList();
-                }
+                rendimientoCarrera = metricasPeriodo
+                    .GroupBy(x => new { x.CodCarrera, x.NombreCarrera })
+                    .Select(g => new RendimientoCarreraDto
+                    {
+                        CodCarrera = g.Key.CodCarrera,
+                        NombreCarrera = g.Key.NombreCarrera,
+                        Aprobados = g.Sum(x => x.CantidadAprobados),
+                        Reprobados = g.Sum(x => x.CantidadReprobados)
+                    })
+                    .ToList();
             }
-
-            // ============================
-            // 6. Evolución de ingresos
-            // ============================
-            var evolucionIngresos = !string.IsNullOrEmpty(termino)
-                ? metricasPeriodo
-                    .OrderBy(x => x.Anio)
-                    .ThenBy(x => x.Termino)
-                    .ToList()
-                : new List<VW_MetricasCarreraPeriodo>();
+            else
+            {
+                rendimientoCarrera = metricasAnio
+                    .GroupBy(x => new { x.CodCarrera, x.NombreCarrera })
+                    .Select(g => new RendimientoCarreraDto
+                    {
+                        CodCarrera = g.Key.CodCarrera,
+                        NombreCarrera = g.Key.NombreCarrera,
+                        Aprobados = g.Sum(x => x.CantidadAprobados),
+                        Reprobados = g.Sum(x => x.CantidadReprobados)
+                    })
+                    .ToList();
+            }
+            
+            var evolucionIngresos = metricasPeriodo
+                .OrderBy(x => x.Anio)
+                .ThenBy(x => x.Termino)
+                .ToList();
 
             var evolucionIngresosDto = new EvolucionIngresosDto
             {
