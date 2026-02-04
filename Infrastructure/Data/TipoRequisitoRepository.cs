@@ -18,7 +18,6 @@ namespace KoopaBackend.Infrastructure.Repositories
 
         public async Task<IEnumerable<TipoRequisito>> GetAllAsync()
         {
-            // Retorna los datos reales de DB2
             return await _context.TiposRequisito.ToListAsync();
 
         }

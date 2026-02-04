@@ -1,48 +1,45 @@
 using KoopaBackend.Application.Services;
 using Microsoft.AspNetCore.Mvc;
+using System;
+using System.Threading.Tasks;
 
-namespace KoopaBackend.Presentation.Controllers;
-
-[Route("api/materias")]
-[ApiController]
-public class MateriaController : ControllerBase
+namespace KoopaBackend.API.Controllers
 {
-    private readonly MateriaService _service;
-
-    public MateriaController(MateriaService service)
+    [Route("api/materias")]
+    [ApiController]
+    public class MateriaController : ControllerBase
     {
-        _service = service;
-    }
+        private readonly MateriaService _materiaService;
 
-    // GET: api/materias/malla-stats/5
-    // Ahora requerimos el ID de la carrera en la URL
-    [HttpGet("malla-stats")]
-    public async Task<IActionResult> GetMateriaMallaStats([FromQuery] int codCarrera, [FromQuery] int? anio, [FromQuery] string? termino)
-    {
-        // Validación básica
-        if (codCarrera <= 0)
+        public MateriaController(MateriaService materiaService)
         {
-            return BadRequest("El ID de la carrera debe ser un número positivo.");
+            _materiaService = materiaService;
         }
 
-        try 
+        [HttpGet("malla-stats")]
+        public async Task<IActionResult> ObtenerMalla(
+            [FromQuery] int codCarrera,
+            [FromQuery] int? anio,
+            [FromQuery] string? termino)
         {
-            // Pasamos el ID al servicio
-            var datos = await _service.ObtenerDatosMallaAsync(codCarrera, anio, termino);
-            
-            if (datos == null || !datos.Any())
+            try
             {
-                // Un 204 No Content es a veces mejor que 404 si la carrera existe pero no tiene malla cargada,
-                // pero un 404 con mensaje está bien para este caso.
-                return NotFound($"No se encontraron datos de malla para la carrera con ID {codCarrera}, año {anio}, término {termino}.");
-            }
+                if (codCarrera <= 0)
+                    return BadRequest("El código de carrera es obligatorio.");
 
-            return Ok(datos);
-        }
-        catch (Exception ex)
-        {
-            // Manejo básico de errores por si falla la conexión a BD
-            return StatusCode(500, $"Error interno: {ex.Message}");
+                var resultado = await _materiaService
+                    .ObtenerMallaAsync(codCarrera, anio, termino);
+
+                return Ok(resultado);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, "Error interno del servidor.");
+            }
         }
     }
 }

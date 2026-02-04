@@ -1,7 +1,7 @@
-using KoopaBackend.Infrastructure.Data;         // Para KoopaDbContext
-using KoopaBackend.Infrastructure.Repositories; // Para MateriaRepository, InscripcionesRepository...
-using KoopaBackend.Domain.Interfaces;           // Para IMateriaRepository...
-using KoopaBackend.Application.Services;        // Para MateriaService...
+using KoopaBackend.Infrastructure.Data;         
+using KoopaBackend.Infrastructure.Repositories; 
+using KoopaBackend.Domain.Interfaces;           
+using KoopaBackend.Application.Services;        
 using IBM.EntityFrameworkCore;
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,14 +13,9 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-
-
-
 // ==================================================================
 // 1. CONFIGURACIÓN DE BASE DE DATOS (DbContext)
 // ==================================================================
-// Asegúrate de instalar el paquete NuGet de tu base de datos (ej: IBM.EntityFrameworkCore para DB2)
-// Aquí uso SQL Server como ejemplo, cámbialo por tu proveedor.
 builder.Services.AddDbContext<KoopaDbContext>(options =>
     options.UseDb2(builder.Configuration.GetConnectionString("DefaultConnection"),
     p => p.SetServerInfo(IBMDBServerType.LUW))); // LUW = Linux/Unix/Windows (Versión de Docker)
@@ -56,21 +51,12 @@ builder.Services.AddScoped<FiltroService>();
 
 
 // Program.cs
-
-// 1. Registras el Repositorio (Capa de Datos)
 builder.Services.AddScoped<IMetricasRepository, MetricasRepository>();
-
-// 2. Registras el Servicio (Capa de Lógica)
 builder.Services.AddScoped<MetricasService>();
 
-// 3. (Opcional) Los controladores ya se registran solos con AddControllers()
-
 // ==================================================================
-// 2. INYECCIÓN DE DEPENDENCIAS (Lo más importante)
+// 2. INYECCIÓN DE DEPENDENCIAS
 // ==================================================================
-// Aquí le dices a .NET: "Cuando alguien pida IMateriaRepository, dale una instancia de MateriaRepository"
-// builder.Services.AddScoped<IMateriaRepository, MateriaRepository>();
-
 // CORS
 builder.Services.AddCors(options =>
 {
@@ -82,11 +68,6 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
-// using (var scope = app.Services.CreateScope())
-// {
-//     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-//     db.Database.Migrate(); // aplica automáticamente todas las migraciones
-// }
 app.UseCors("AllowFrontend");
 
 
@@ -95,7 +76,7 @@ app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
     c.SwaggerEndpoint("/swagger/v1/swagger.json", "Koopa API V1");
-    c.RoutePrefix = String.Empty; // Agregado: ahora se accede en /swagger-api
+    c.RoutePrefix = String.Empty;
 });
 
 app.UseHttpsRedirection();
