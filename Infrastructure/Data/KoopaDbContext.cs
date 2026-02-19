@@ -104,6 +104,7 @@ namespace KoopaBackend.Infrastructure.Data
                 entity.Property(e => e.NombreCarrera).HasColumnName("NOMBRE_CARRERA");
                 entity.Property(e => e.CodMateria).HasColumnName("COD_MATERIA");
                 entity.Property(e => e.NombreMateria).HasColumnName("NOMBRE_MATERIA");
+                entity.Property(e => e.CodigoMateria).HasColumnName("CODIGO_MATERIA");
                 entity.Property(e => e.CantidadEstudiantes).HasColumnName("CANTIDAD_ESTUDIANTES");
                 entity.Property(e => e.CantidadInscripciones).HasColumnName("CANTIDAD_INSCRIPCIONES");
                 entity.Property(e => e.CantidadAprobados).HasColumnName("CANTIDAD_APROBADOS");

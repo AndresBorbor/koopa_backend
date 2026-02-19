@@ -22,11 +22,14 @@ namespace KoopaBackend.Application.Services
             int? anio,
             string? termino)
         {
+
             var metricas = await _repository
                 .ObtenerMetricasMateriasAsync(codCarrera, anio, termino);
 
+          
             var requisitos = await _repository
                 .ObtenerRequisitosAsync();
+
 
             var materias = metricas
                 .GroupBy(m => m.CodMateria)
@@ -70,12 +73,12 @@ namespace KoopaBackend.Application.Services
                                 Descripcion = "Descripción agregada",
                                 NotaPie = "Nota al pie agregada"
                             });
-
                     return new MateriaMallaDto
                     {
                         Id = materia.CodMateria,
                         Codigo = materia.CodMateria.ToString(),
                         Nombre = materia.NombreMateria ?? "N/A",
+                        CodigoMateria = materia.CodigoMateria ?? "N/A",
                         Nivel = materia.NivelCarrera ?? "N/A",
                         CantidadEstudiantes = inscritos,
                         Estado = estado,

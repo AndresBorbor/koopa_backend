@@ -7,6 +7,7 @@ namespace KoopaBackend.Application.DTOs
         public int Id { get; set; }
         public string Codigo { get; set; }
         public string Nombre { get; set; }
+        public string CodigoMateria { get; set; }
         public string Nivel { get; set; }
         public string Color { get; set; }
         

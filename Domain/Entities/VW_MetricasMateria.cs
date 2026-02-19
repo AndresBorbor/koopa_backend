@@ -13,6 +13,7 @@ namespace KoopaBackend.Domain.Entities
         public string NombreCarrera { get; set; }
         public int CodMateria { get; set; }
         public string NombreMateria { get; set; }
+        public string CodigoMateria { get; set; }
         public int CantidadEstudiantes { get; set; }
         public int CantidadInscripciones { get; set; }
         public int CantidadAprobados { get; set; }
