@@ -17,6 +17,6 @@ COPY . .
 # En modo desarrollo (dotnet watch), el driver se copia dentro de bin/Debug/net8.0/clidriver/lib.
 ENV LD_LIBRARY_PATH="/app/bin/Debug/net8.0/clidriver/lib:$LD_LIBRARY_PATH"
 
-EXPOSE 8080
+EXPOSE 8081
 
-CMD ["dotnet", "watch", "run", "--urls", "http://0.0.0.0:8080"]
+CMD ["dotnet", "watch", "run", "--urls", "http://0.0.0.0:8081"]
