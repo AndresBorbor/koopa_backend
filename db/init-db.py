@@ -98,10 +98,20 @@ def load_data(engine):
 
     print(f"Buscando archivos CSV en {DATA_DIR}...")
     
+    # Obtener el listado de archivos en formato en minúsculas para coincidencia en Linux (Case-Sensitive)
+    archivos_reales = {}
+    if os.path.exists(DATA_DIR):
+        for f in os.listdir(DATA_DIR):
+            if f.endswith('.csv') or f.endswith('.CSV'):
+                archivos_reales[f.lower()] = f
+    
     for table_name in tables_order:
-        file_path = os.path.join(DATA_DIR, f"{table_name}.csv")
+        nombre_esperado = f"{table_name}.csv".lower()
         
-        if os.path.exists(file_path):
+        if nombre_esperado in archivos_reales:
+            file_real_name = archivos_reales[nombre_esperado]
+            file_path = os.path.join(DATA_DIR, file_real_name)
+            
             print(f"\n--- Cargando {file_path} en tabla '{table_name.upper()}' ---")
             try:
                 # Leer el CSV
@@ -133,7 +143,7 @@ def load_data(engine):
             except Exception as e:
                 print(f"Error abriendo o procesando el archivo {file_path}: {e}")
         else:
-             print(f"Advertencia: No se encontró el archivo '{file_path}' correspondiente a la tabla '{table_name}'. Pasando al siguiente...")
+             print(f"Advertencia: No se encontró el archivo para la tabla '{table_name}' (se buscó {table_name}.csv). Pasando al siguiente...")
              
 
 if __name__ == "__main__":
