@@ -62,7 +62,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend",
         policy => policy
-            .WithOrigins("*") // frontend
+            .AllowAnyOrigin() // Permitir cualquier origen (frontend en cualquier IP/puerto)
             .AllowAnyHeader()
             .AllowAnyMethod());
 });
